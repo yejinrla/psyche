@@ -1,8 +1,9 @@
 import { StatusBar } from "expo-status-bar";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
+  PanResponder,
   Platform,
   Pressable,
   SafeAreaView,
@@ -33,6 +34,7 @@ import {
   Plus,
   RotateCcw,
   Save,
+  Search,
   Sparkles,
   Stethoscope,
   TrendingUp,
@@ -144,7 +146,7 @@ export default function App() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
       <View style={styles.appShell}>
-        {activeTab !== "home" ? <AppHeader openModal={openModal} /> : null}
+        {activeTab !== "home" && activeTab !== "timeline" ? <AppHeader openModal={openModal} /> : null}
         <View style={styles.screen}>{renderScreen()}</View>
         <TabBar activeTab={activeTab} onChange={setActiveTab} />
       </View>
@@ -233,10 +235,7 @@ function HomeScreen({
   data: PsycheData;
   openModal: (kind: Exclude<ModalKind, null>) => void;
 }) {
-  const [doseDone, setDoseDone] = useState(true);
-  const [checkInRating, setCheckInRating] = useState<Rating>(3);
   const activeMeds = activeMedications(data.medications);
-  const primaryMedication = activeMeds[0];
   const appointmentVisit = useMemo(() => {
     const visitsWithAppointment = data.visits
       .flatMap((visit) =>
@@ -301,125 +300,349 @@ function HomeScreen({
         </View>
       </View>
 
-      <View style={styles.checkOuterCard}>
-        <View style={styles.checkCard}>
-          <View style={styles.checkCardHeader}>
-            <View style={styles.checkCardTitleRow}>
-              <Text style={styles.checkFlower}>✿</Text>
-              <Text style={styles.checkCardTitle}>오늘의 체크인</Text>
+      <MoodCard />
+
+      <SleepCard />
+
+      <TimeOfDayCard />
+
+      <Pressable
+        style={styles.checkMiniCardFull}
+        onPress={() => openModal("visit")}
+      >
+        <CalendarDays color="#4025E8" size={28} strokeWidth={2.3} />
+        <Text style={styles.miniCardTitle}>다음 진료</Text>
+        <Text style={styles.miniCardMeta}>
+          {appointment
+            ? `${toDotMonthDay(appointment.date)} · d-${Math.max(daysUntil(appointment.date), 0)}`
+            : "일정 없음"}
+        </Text>
+      </Pressable>
+    </ScrollView>
+  );
+}
+
+const MOOD_LEVELS = ["최악", "별로", "그냥 그래", "좋아", "최고"] as const;
+const MOOD_EMOJIS = ["😔", "😕", "🌤️", "😊", "🌈"] as const;
+
+const SYMPTOM_META: Record<string, { emoji: string; placeholder: string }> = {
+  불안: { emoji: "🌀", placeholder: "어떤 상황에서 불안했나요?" },
+  우울: { emoji: "🌧️", placeholder: "어떤 상황에서 우울했나요?" },
+  강박: { emoji: "⚡", placeholder: "어떤 상황에서 강박을 느꼈나요?" },
+};
+
+function SymptomSheet({ symptom, onClose }: { symptom: string | null; onClose: () => void }) {
+  const [intensity, setIntensity] = useState<number | null>(null);
+  const [situation, setSituation] = useState("");
+  const [memo, setMemo] = useState("");
+
+  const handleSave = () => {
+    setIntensity(null);
+    setSituation("");
+    setMemo("");
+    onClose();
+  };
+
+  const meta = symptom ? SYMPTOM_META[symptom] : null;
+
+  return (
+    <Modal visible={!!symptom} animationType="slide" transparent onRequestClose={onClose}>
+      <Pressable style={styles.modalBackdrop} onPress={onClose} />
+      <View style={styles.anxietySheet}>
+        <View style={styles.anxietySheetHandle} />
+        <View style={styles.anxietySheetHeader}>
+          <Text style={styles.anxietySheetTitle}>{meta?.emoji} {symptom} 기록</Text>
+          <Pressable onPress={onClose}><Text style={styles.anxietySheetClose}>✕</Text></Pressable>
+        </View>
+
+        <Text style={styles.anxietySheetSectionLabel}>{symptom} 강도</Text>
+        <View style={styles.anxietyIntensityRow}>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <Pressable
+              key={n}
+              style={[styles.anxietyIntensityBtn, intensity === n && styles.anxietyIntensityBtnActive]}
+              onPress={() => setIntensity(n)}
+            >
+              <Text style={[styles.anxietyIntensityNum, intensity === n && styles.anxietyIntensityNumActive]}>{n}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <View style={styles.anxietyIntensityScale}>
+          <Text style={styles.anxietyScaleLabel}>거의 없음</Text>
+          <Text style={styles.anxietyScaleLabel}>매우 심함</Text>
+        </View>
+
+        <Text style={styles.anxietySheetSectionLabel}>상황</Text>
+        <TextInput
+          style={styles.anxietyInput}
+          placeholder={meta?.placeholder ?? ""}
+          placeholderTextColor="#aaa"
+          value={situation}
+          onChangeText={setSituation}
+        />
+
+        <Text style={styles.anxietySheetSectionLabel}>메모</Text>
+        <TextInput
+          style={[styles.anxietyInput, styles.anxietyInputMulti]}
+          placeholder="추가로 기록할 내용이 있나요?"
+          placeholderTextColor="#aaa"
+          value={memo}
+          onChangeText={setMemo}
+          multiline
+        />
+
+        <Pressable style={styles.anxietySaveBtn} onPress={handleSave}>
+          <Text style={styles.anxietySaveBtnText}>저장</Text>
+        </Pressable>
+      </View>
+    </Modal>
+  );
+}
+
+function MoodCard() {
+  const [step, setStep] = useState(2);
+  const trackWidth = useRef(0);
+  const [activeSymptom, setActiveSymptom] = useState<string | null>(null);
+
+  const label = MOOD_LEVELS[step];
+  const emoji = MOOD_EMOJIS[step];
+  const value = step / (MOOD_LEVELS.length - 1);
+
+  const snapToStep = (x: number) => {
+    if (trackWidth.current <= 0) return;
+    const ratio = Math.max(0, Math.min(1, x / trackWidth.current));
+    setStep(Math.round(ratio * (MOOD_LEVELS.length - 1)));
+  };
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (evt) => snapToStep(evt.nativeEvent.locationX),
+      onPanResponderMove: (evt) => snapToStep(evt.nativeEvent.locationX),
+    }),
+  ).current;
+
+  return (
+    <View style={styles.moodCard}>
+      <Text style={styles.moodTitle}>오늘 기분이 어때요?</Text>
+      <Text style={styles.moodEmoji}>{emoji}</Text>
+      <View
+        style={styles.moodTrackWrap}
+        onLayout={(e) => {
+          trackWidth.current = e.nativeEvent.layout.width;
+        }}
+        {...panResponder.panHandlers}
+      >
+        <View style={styles.moodTrack}>
+          <View style={[styles.moodFill, { width: `${value * 100}%` }]} />
+          {[0, 1, 2, 3, 4].map((i) => (
+            <View
+              key={i}
+              style={[
+                styles.moodSnapDot,
+                { left: `${(i / 4) * 100}%`, marginLeft: -5 },
+                i <= step && styles.moodSnapDotFilled,
+              ]}
+            />
+          ))}
+          <View
+            style={[
+              styles.moodThumb,
+              { left: `${value * 100}%`, marginLeft: -13 },
+            ]}
+          />
+        </View>
+      </View>
+      <Text style={styles.moodLabel}>{label}</Text>
+
+      <View style={styles.moodDivider} />
+
+      <View style={styles.moodAvatarRow}>
+        {([
+          { label: "불안", emoji: "🌀" },
+          { label: "우울", emoji: "🌧️" },
+          { label: "강박", emoji: "⚡" },
+        ] as const).map(({ label: btnLabel, emoji }) => (
+          <Pressable
+            key={btnLabel}
+            style={styles.moodAvatarBtn}
+            onPress={() => setActiveSymptom(btnLabel)}
+          >
+            <View style={styles.moodAvatarCircle}>
+              <Text style={styles.moodAvatarEmoji}>{emoji}</Text>
             </View>
-            <Text style={styles.checkProgress}>18/365</Text>
-          </View>
+            <Text style={styles.moodAvatarLabel}>{btnLabel}</Text>
+          </Pressable>
+        ))}
+      </View>
+      <SymptomSheet symptom={activeSymptom} onClose={() => setActiveSymptom(null)} />
+    </View>
+  );
+}
 
-          <View style={styles.questionRowTop}>
-            <Text style={styles.checkQuestion}>불안 증상은 어땠나요?</Text>
-            <Text style={styles.scoreText}>
-              {checkInRating} <Text style={styles.scoreSlash}>/ 5</Text>
-            </Text>
-          </View>
+type TimeOfDay = "아침" | "점심" | "저녁" | "취침전";
 
-          <View style={styles.ratingButtonRow}>
-            {ratings.map((rating) => {
-              const selected = rating <= checkInRating;
+const SLEEP_QUALITY = [
+  { emoji: "😣", label: "나쁨" },
+  { emoji: "😐", label: "보통" },
+  { emoji: "🙂", label: "좋음" },
+  { emoji: "😴", label: "푹잠" },
+] as const;
 
-              return (
-                <Pressable
-                  key={rating}
-                  style={[
-                    styles.checkRatingButton,
-                    selected && styles.checkRatingButtonSelected,
-                  ]}
-                  onPress={() => setCheckInRating(rating)}
-                >
-                  <Text
-                    style={[
-                      styles.checkRatingText,
-                      selected && styles.checkRatingTextSelected,
-                    ]}
-                  >
-                    {rating}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+function SleepCard() {
+  const [bedTime, setBedTime] = useState("23:00");
+  const [wakeTime, setWakeTime] = useState("07:00");
+  const [quality, setQuality] = useState<number | null>(null);
 
-          <View style={styles.ratingCaptionRow}>
-            <Text style={styles.ratingCaption}>약함</Text>
-            <Pressable onPress={() => openModal("symptom")}>
-              <Text style={styles.moreSymptomText}>+ 우울·수면 등 더 기록</Text>
-            </Pressable>
-            <Text style={styles.ratingCaption}>심함</Text>
-          </View>
+  const duration = (() => {
+    const [bh, bm] = bedTime.split(":").map(Number);
+    const [wh, wm] = wakeTime.split(":").map(Number);
+    const bedMins = bh * 60 + bm;
+    const wakeMins = wh * 60 + wm;
+    const diff = wakeMins >= bedMins ? wakeMins - bedMins : 1440 - bedMins + wakeMins;
+    return `${Math.floor(diff / 60)}시간 ${diff % 60 > 0 ? `${diff % 60}분` : ""}`.trim();
+  })();
 
-          <View style={styles.checkDivider} />
+  return (
+    <View style={styles.sleepCard}>
+      <View style={styles.sleepCardHeader}>
+        <Text style={styles.sleepCardTitle}>😴  수면 기록</Text>
+        <Text style={styles.sleepDuration}>{duration}</Text>
+      </View>
+      <View style={styles.sleepTimeRow}>
+        <View style={styles.sleepTimeBlock}>
+          <Text style={styles.sleepTimeLabel}>취침</Text>
+          <TextInput
+            value={bedTime}
+            onChangeText={setBedTime}
+            style={styles.sleepTimeInput}
+            keyboardType="numbers-and-punctuation"
+          />
+        </View>
+        <View style={styles.sleepTimeDivider} />
+        <View style={styles.sleepTimeBlock}>
+          <Text style={styles.sleepTimeLabel}>기상</Text>
+          <TextInput
+            value={wakeTime}
+            onChangeText={setWakeTime}
+            style={styles.sleepTimeInput}
+            keyboardType="numbers-and-punctuation"
+          />
+        </View>
+      </View>
 
-          {primaryMedication ? (
+      <Text style={styles.sleepQualityTitle}>수면의 질</Text>
+      <View style={styles.sleepQualityRow}>
+        {SLEEP_QUALITY.map(({ emoji, label }, i) => {
+          const active = quality === i;
+          return (
             <Pressable
-              style={styles.checkMedicationRow}
-              onPress={() => setDoseDone((current) => !current)}
+              key={label}
+              style={[styles.sleepQualityBtn, active && styles.sleepQualityBtnActive]}
+              onPress={() => setQuality(i)}
             >
-              <View style={styles.checkPillBox}>
-                <View style={styles.pillGlyph} />
-              </View>
-              <View style={styles.flex1}>
-                <Text style={styles.checkMedName}>
-                  {primaryMedication.name}{" "}
-                  <Text style={styles.checkMedDose}>
-                    {primaryMedication.dose}
-                  </Text>
-                </Text>
-                <Text style={styles.checkMedMeta}>
-                  오늘 아침 복약 · {daysBetween(primaryMedication.startDate)}
-                  일차
-                </Text>
-              </View>
-              <View
-                style={[styles.medCheckBox, doseDone && styles.medCheckBoxDone]}
-              >
-                {doseDone ? (
-                  <CheckCircle2 color="#4025E8" size={24} strokeWidth={2.4} />
-                ) : null}
-              </View>
-            </Pressable>
-          ) : (
-            <Pressable
-              style={styles.emptyHomeAction}
-              onPress={() => openModal("medication")}
-            >
-              <Text style={styles.emptyHomeActionText}>
-                오늘 복용할 약을 등록하세요
+              <Text style={styles.sleepQualityEmoji}>{emoji}</Text>
+              <Text style={[styles.sleepQualityLabel, active && styles.sleepQualityLabelActive]}>
+                {label}
               </Text>
             </Pressable>
-          )}
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+function TimeOfDayCard() {
+  const [selected, setSelected] = useState<TimeOfDay>("아침");
+  const options: TimeOfDay[] = ["아침", "점심", "저녁", "취침전"];
+
+  const medications = [
+    { name: "아리피졸정 1mg", qty: 0.5 },
+    { name: "인데놀정 10mg", qty: 1 },
+    { name: "메녹틸정 20mg", qty: 1 },
+    { name: "자나팜정 0.25mg", qty: 0.5 },
+  ];
+  const [checked, setChecked] = useState<Record<string, boolean>>({});
+
+  const toggle = (med: string) =>
+    setChecked((prev) => ({ ...prev, [med]: !prev[med] }));
+
+  return (
+    <View style={styles.timeOfDayCard}>
+      <View style={styles.timeOfDaySegment}>
+        {options.map((option) => (
+          <Pressable
+            key={option}
+            style={[styles.timeOfDayBtn, selected === option && styles.timeOfDayBtnActive]}
+            onPress={() => setSelected(option)}
+          >
+            <Text style={[styles.timeOfDayLabel, selected === option && styles.timeOfDayLabelActive]}>
+              {option}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+      <View style={styles.timeOfDayMedList}>
+        {medications.map(({ name, qty }, i) => {
+          const done = !!checked[name];
+          return (
+            <Pressable
+              key={name}
+              style={[
+                styles.timeOfDayMedRow,
+                i < medications.length - 1 && styles.timeOfDayMedRowBorder,
+              ]}
+              onPress={() => toggle(name)}
+            >
+              <View style={[styles.medCheckCircle, done && styles.medCheckCircleDone]}>
+                {done ? <Text style={styles.medCheckMark}>✓</Text> : null}
+              </View>
+              <Text style={[styles.timeOfDayMedText, done && styles.timeOfDayMedTextDone]}>
+                {name}
+              </Text>
+              <Text style={[styles.timeOfDayMedQty, done && styles.timeOfDayMedTextDone]}>
+                {qty}정
+              </Text>
+              <Pill color={done ? "#4025E8" : "#C5C3E0"} size={18} strokeWidth={2} />
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+function StarRatingRow({ label, icon, desc }: { label: string; icon: string; desc: string }) {
+  const [rating, setRating] = useState(0);
+
+  return (
+    <View style={styles.starRow}>
+      <View style={styles.starRowLeft}>
+        <View style={styles.starRowText}>
+          <Text style={styles.starLabel}>{label}</Text>
+          <Text style={styles.starDesc}>{desc}</Text>
         </View>
       </View>
-
-      <View style={styles.checkMiniGrid}>
-        <Pressable
-          style={styles.checkMiniCard}
-          onPress={() => openModal("visit")}
-        >
-          <CalendarDays color="#4025E8" size={28} strokeWidth={2.3} />
-          <Text style={styles.miniCardTitle}>다음 진료</Text>
-          <Text style={styles.miniCardMeta}>
-            {appointment
-              ? `${toDotMonthDay(appointment.date)} · d-${Math.max(daysUntil(appointment.date), 0)}`
-              : "일정 없음"}
-          </Text>
-        </Pressable>
-
-        <View style={styles.checkMiniCard}>
-          <View style={styles.trendMiniHeader}>
-            <Text style={styles.miniCardTitle}>불안 추세</Text>
-            <View style={styles.trendMiniBadge}>
-              <Text style={styles.trendMiniBadgeText}>↘</Text>
-            </View>
-          </View>
-          <SymptomSparkline values={symptomValues} compact />
+      <View style={styles.starRowRight}>
+        <View style={styles.starGroup}>
+          {[1, 2, 3, 4, 5].map((n) => (
+            <Pressable
+              key={n}
+              onPress={() => setRating(n)}
+              style={[styles.ratingNumBtn, n <= rating && styles.ratingNumBtnSelected]}
+            >
+              <Text style={[styles.ratingNumText, n <= rating && styles.ratingNumTextSelected]}>{n}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <View style={styles.starScaleRow}>
+          <Text style={styles.starScaleText}>없음</Text>
+          <Text style={styles.starScaleText}>매우 심함</Text>
         </View>
       </View>
-    </ScrollView>
+    </View>
   );
 }
 
@@ -752,20 +975,83 @@ function MedicationScreen({
   );
 }
 
+const TIMELINE_FILTERS = ["진료", "개선", "약 변경", "부작용"] as const;
+type TimelineFilter = typeof TIMELINE_FILTERS[number];
+
 function TimelineScreen({ timeline }: { timeline: TimelineItem[] }) {
+  const weekDays = useMemo(() => buildWeekStrip(), []);
+  const [activeFilter, setActiveFilter] = useState<TimelineFilter | null>(null);
+
   return (
     <ScrollView
-      contentContainerStyle={styles.screenContent}
+      contentContainerStyle={styles.homeContent}
       showsVerticalScrollIndicator={false}
     >
-      <SectionHeader title="치료 타임라인" />
-      <View style={styles.timelinePanel}>
-        {timeline.map((item, index) => (
-          <TimelineEventRow
-            key={item.id}
-            item={item}
-            isLast={index === timeline.length - 1}
+      <View style={[styles.morningHeader, { minHeight: 0 }]}>
+        <View style={styles.morningTopRow}>
+          <View style={styles.headerBrand}>
+            <ButterflyIcon color="#4025E8" />
+          </View>
+          <View style={styles.headerBrandSpacer} />
+          <Pressable style={styles.notificationButton}>
+            <Bell color="#20212B" size={20} strokeWidth={2.6} />
+          </Pressable>
+        </View>
+        <Text style={[styles.morningTitle, { textAlign: "left", marginTop: 2 }]}>치료 타임라인</Text>
+
+        <View style={styles.tlSearchBar}>
+          <Search color="#9096A2" size={16} strokeWidth={2.2} />
+          <TextInput
+            placeholder="Search"
+            placeholderTextColor="#9096A2"
+            style={styles.tlSearchInput}
           />
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tlFilterRow}
+        >
+          {TIMELINE_FILTERS.map((filter) => {
+            const active = activeFilter === filter;
+            return (
+              <Pressable
+                key={filter}
+                style={styles.tlFilterTab}
+                onPress={() => setActiveFilter(active ? null : filter)}
+              >
+                <Text style={[styles.tlFilterTabText, active && styles.tlFilterTabTextActive]}>
+                  {filter}
+                </Text>
+                {active ? <View style={styles.tlFilterTabUnderline} /> : null}
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
+
+      <View style={styles.timelineCardList}>
+        {Object.entries(
+          timeline.reduce<Record<string, TimelineItem[]>>((acc, item) => {
+            (acc[item.date] = acc[item.date] ?? []).push(item);
+            return acc;
+          }, {})
+        ).map(([date, items]) => (
+          <View key={date}>
+            <Text style={styles.tlDateHeader}>
+              {new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric", weekday: "long" }).format(new Date(`${date}T00:00:00`))}
+            </Text>
+            <View style={styles.tlGroup}>
+              {items.map((item, index) => (
+                <TimelineEventRow
+                  key={item.id}
+                  item={item}
+                  isLast={index === items.length - 1}
+                />
+              ))}
+            </View>
+          </View>
         ))}
       </View>
     </ScrollView>
@@ -1601,6 +1887,14 @@ function FormFooter({ onSave }: { onSave: () => void }) {
   );
 }
 
+const TL_EMOJI: Record<string, string> = {
+  visit: "🏥",
+  medication: "💊",
+  symptom: "🧠",
+  sideEffect: "⚠️",
+  effect: "✨",
+};
+
 function TimelineEventRow({
   item,
   isLast,
@@ -1608,17 +1902,21 @@ function TimelineEventRow({
   item: TimelineItem;
   isLast: boolean;
 }) {
+  const emoji = TL_EMOJI[item.type];
+
   return (
-    <View style={styles.timelineRow}>
-      <View style={styles.timelineRail}>
-        <View style={[styles.timelineDot, { backgroundColor: item.accent }]} />
-        {!isLast ? <View style={styles.timelineLine} /> : null}
+    <View style={[styles.tlFlatRow, !isLast && styles.tlFlatRowBorder]}>
+      <View style={[styles.tlFlatIcon, { backgroundColor: item.accent + "28" }]}>
+        {emoji
+          ? <Text style={styles.tlFlatIconEmoji}>{emoji}</Text>
+          : <View style={[styles.tlFlatIconDot, { backgroundColor: item.accent }]} />
+        }
       </View>
-      <View style={styles.timelineContent}>
-        <Text style={styles.timelineDate}>{formatShortDate(item.date)}</Text>
-        <Text style={styles.timelineTitle}>{item.title}</Text>
-        <Text style={styles.timelineDescription}>{item.description}</Text>
+      <View style={styles.tlFlatText}>
+        <Text style={styles.tlFlatTitle}>{item.title}</Text>
+        <Text style={styles.tlFlatDesc} numberOfLines={1}>{item.description}</Text>
       </View>
+      <Text style={styles.tlFlatMore}>•••</Text>
     </View>
   );
 }
@@ -1858,11 +2156,11 @@ const styles = StyleSheet.create({
   },
   weekItem: {
     width: 34,
-    height: 34,
+    height: 46,
     borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
+    gap: 8,
   },
   weekItemActive: {
     borderWidth: 1,
@@ -1888,6 +2186,478 @@ const styles = StyleSheet.create({
   weekNumberActive: {
     color: "#20212B",
     fontWeight: "700",
+  },
+  moodCard: {
+    borderRadius: 24,
+    backgroundColor: "#FAF9FD",
+    borderWidth: 1,
+    borderColor: "#E1E0EE",
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: 26,
+    alignItems: "center",
+  },
+  moodTitle: {
+    color: "#20212B",
+    fontSize: 22,
+    fontWeight: "800",
+    textAlign: "center",
+    letterSpacing: 0,
+  },
+  moodEmoji: {
+    fontSize: 72,
+    marginTop: 16,
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  moodTrackWrap: {
+    width: "100%",
+    paddingVertical: 16,
+  },
+  moodTrack: {
+    width: "100%",
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#C5C3E0",
+    justifyContent: "center",
+  },
+  moodFill: {
+    height: "100%",
+    borderRadius: 2,
+    backgroundColor: "#4025E8",
+  },
+  moodSnapDot: {
+    position: "absolute",
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#C5C3E0",
+    top: -3,
+  },
+  moodSnapDotFilled: {
+    backgroundColor: "#4025E8",
+  },
+  moodThumb: {
+    position: "absolute",
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "#FFFFFF",
+    top: -11,
+    borderWidth: 2,
+    borderColor: "#4025E8",
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  moodLabel: {
+    color: "#4025E8",
+    fontSize: 18,
+    fontWeight: "800",
+    marginTop: 6,
+    textAlign: "center",
+  },
+  sleepCard: {
+    borderRadius: 24,
+    backgroundColor: "#FAF9FD",
+    borderWidth: 1,
+    borderColor: "#E1E0EE",
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+  },
+  sleepCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  sleepCardTitle: {
+    color: "#20212B",
+    fontSize: 17,
+    fontWeight: "800",
+  },
+  sleepDuration: {
+    color: "#4025E8",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  sleepTimeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  sleepTimeBlock: {
+    flex: 1,
+    backgroundColor: "#EEEDF8",
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+    gap: 4,
+  },
+  sleepTimeLabel: {
+    color: "#9096A2",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  sleepTimeInput: {
+    color: "#20212B",
+    fontSize: 26,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  sleepTimeDivider: {
+    width: 12,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: "#C5C3E0",
+  },
+  sleepQualityTitle: {
+    color: "#9096A2",
+    fontSize: 12,
+    fontWeight: "700",
+    marginTop: 18,
+    marginBottom: 10,
+  },
+  sleepQualityRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  sleepQualityBtn: {
+    flex: 1,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E1E0EE",
+    backgroundColor: "#FFFFFF",
+    paddingVertical: 10,
+    alignItems: "center",
+    gap: 4,
+  },
+  sleepQualityBtnActive: {
+    borderColor: "#4025E8",
+    backgroundColor: "#EEEDF8",
+  },
+  sleepQualityEmoji: {
+    fontSize: 22,
+  },
+  sleepQualityLabel: {
+    color: "#9096A2",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  sleepQualityLabelActive: {
+    color: "#4025E8",
+    fontWeight: "800",
+  },
+  anxietySheet: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  anxietySheetHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#DDD",
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  anxietySheetHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  anxietySheetTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1a1a2e",
+  },
+  anxietySheetClose: {
+    fontSize: 18,
+    color: "#999",
+  },
+  anxietySheetSectionLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#666",
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  anxietyIntensityRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 4,
+  },
+  anxietyIntensityBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "#E1E0EE",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F7F7FB",
+  },
+  anxietyIntensityBtnActive: {
+    borderColor: "#4025E8",
+    backgroundColor: "#EBE8FD",
+  },
+  anxietyIntensityNum: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#999",
+  },
+  anxietyIntensityNumActive: {
+    color: "#4025E8",
+  },
+  anxietyIntensityScale: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  anxietyScaleLabel: {
+    fontSize: 11,
+    color: "#aaa",
+  },
+  anxietyInput: {
+    borderWidth: 1,
+    borderColor: "#E1E0EE",
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 14,
+    color: "#1a1a2e",
+    backgroundColor: "#F7F7FB",
+    marginBottom: 14,
+  },
+  anxietyInputMulti: {
+    height: 80,
+    textAlignVertical: "top",
+  },
+  anxietySaveBtn: {
+    backgroundColor: "#4025E8",
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 4,
+  },
+  anxietySaveBtnText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  timeOfDayCard: {
+    borderRadius: 24,
+    backgroundColor: "#FAF9FD",
+    borderWidth: 1,
+    borderColor: "#E1E0EE",
+    padding: 12,
+  },
+  timeOfDaySegment: {
+    flexDirection: "row",
+    backgroundColor: "#EEEDF8",
+    borderRadius: 14,
+    padding: 4,
+    gap: 4,
+  },
+  timeOfDayBtn: {
+    flex: 1,
+    height: 38,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  timeOfDayBtnActive: {
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  timeOfDayLabel: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#9096A2",
+  },
+  timeOfDayLabelActive: {
+    color: "#4025E8",
+    fontWeight: "800",
+  },
+  timeOfDayMedList: {
+    marginTop: 12,
+  },
+  timeOfDayMedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 4,
+  },
+  timeOfDayMedRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#EFEFEF",
+  },
+  medCheckCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "#C5C3E0",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  medCheckCircleDone: {
+    backgroundColor: "#4025E8",
+    borderColor: "#4025E8",
+  },
+  medCheckMark: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  timeOfDayMedText: {
+    flex: 1,
+    color: "#20212B",
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  timeOfDayMedTextDone: {
+    color: "#B0B3BE",
+    textDecorationLine: "line-through",
+  },
+  timeOfDayMedQty: {
+    color: "#9096A2",
+    fontSize: 13,
+    fontWeight: "700",
+    marginRight: 4,
+  },
+  moodAvatarRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+    marginTop: 4,
+  },
+  moodAvatarBtn: {
+    alignItems: "center",
+    gap: 8,
+  },
+  moodAvatarCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#EEEDF8",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  moodAvatarEmoji: {
+    fontSize: 24,
+  },
+  moodAvatarLabel: {
+    color: "#20212B",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  moodDivider: {
+    height: 1,
+    backgroundColor: "#E1E0EE",
+    width: "100%",
+    marginTop: 20,
+    marginBottom: 16,
+  },
+  starRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 16,
+  },
+  starRowLeft: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  starIconBox: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "#EEEDF8",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  starIconEmoji: {
+    fontSize: 22,
+  },
+  starRowText: {
+    flex: 1,
+  },
+  starLabel: {
+    color: "#20212B",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  starDesc: {
+    color: "#9096A2",
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 2,
+    fontWeight: "500",
+  },
+  starRowRight: {
+    width: 160,
+    alignItems: "flex-end",
+    gap: 4,
+  },
+  starGroup: {
+    flexDirection: "row",
+    gap: 4,
+  },
+  starScaleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  starScaleText: {
+    color: "#B0B3BE",
+    fontSize: 10,
+    fontWeight: "600",
+  },
+  starIcon: {
+    fontSize: 28,
+    color: "#D9D8E8",
+  },
+  starIconFilled: {
+    color: "#F5C518",
+  },
+  ratingNumBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: "#D9D8E8",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ratingNumBtnSelected: {
+    backgroundColor: "#4025E8",
+    borderColor: "#4025E8",
+  },
+  ratingNumText: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#B0B3BE",
+  },
+  ratingNumTextSelected: {
+    color: "#FFFFFF",
   },
   checkOuterCard: {
     borderRadius: 28,
@@ -2066,6 +2836,13 @@ const styles = StyleSheet.create({
     color: "#4025E8",
     fontSize: 15,
     fontWeight: "900",
+  },
+  checkMiniCardFull: {
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#E1E0E9",
+    backgroundColor: "#FAF9FD",
+    padding: 20,
   },
   checkMiniGrid: {
     flexDirection: "row",
@@ -2514,6 +3291,225 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 6,
     ...shadow,
+  },
+  tlSearchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#F2F2F5",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 40,
+    marginTop: 12,
+  },
+  tlSearchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: "#20212B",
+    fontWeight: "500",
+  },
+  tlFilterRow: {
+    flexDirection: "row",
+    gap: 0,
+    paddingBottom: 0,
+    marginTop: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E3E5EC",
+  },
+  tlFilterTab: {
+    paddingHorizontal: 14,
+    paddingBottom: 10,
+    alignItems: "center",
+    position: "relative",
+  },
+  tlFilterTabText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#9096A2",
+  },
+  tlFilterTabTextActive: {
+    color: "#20212B",
+    fontWeight: "800",
+  },
+  tlFilterTabUnderline: {
+    position: "absolute",
+    bottom: 0,
+    left: 14,
+    right: 14,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: "#20212B",
+  },
+  tlDateHeader: {
+    color: "#9096A2",
+    fontSize: 13,
+    fontWeight: "700",
+    marginTop: 10,
+    marginBottom: 4,
+    paddingHorizontal: 4,
+  },
+  tlGroup: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#EBEBF0",
+    overflow: "hidden",
+  },
+  tlFlatRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  tlFlatRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#F2F2F5",
+  },
+  tlFlatIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tlFlatIconEmoji: {
+    fontSize: 18,
+  },
+  tlFlatIconDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+  },
+  tlFlatText: {
+    flex: 1,
+    gap: 3,
+  },
+  tlFlatTitle: {
+    color: "#20212B",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  tlFlatDesc: {
+    color: "#9096A2",
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  tlFlatMore: {
+    color: "#C5C3E0",
+    fontSize: 14,
+    fontWeight: "700",
+    letterSpacing: 1,
+  },
+  timelineCardList: {
+    gap: 0,
+  },
+  tlCardRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  tlRail: {
+    width: 44,
+    alignItems: "center",
+    paddingTop: 18,
+  },
+  tlCalBadge: {
+    width: 44,
+    borderRadius: 10,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#E3E5EC",
+    backgroundColor: "#FFFFFF",
+  },
+  tlCalHeader: {
+    height: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tlCalMonth: {
+    color: "#FFFFFF",
+    fontSize: 9,
+    fontWeight: "800",
+    letterSpacing: 0.4,
+  },
+  tlCalBody: {
+    alignItems: "center",
+    paddingVertical: 4,
+  },
+  tlCalDay: {
+    color: "#20212B",
+    fontSize: 18,
+    fontWeight: "900",
+    lineHeight: 22,
+  },
+  tlCalWeekday: {
+    color: "#9096A2",
+    fontSize: 9,
+    fontWeight: "700",
+  },
+  tlLine: {
+    width: 2,
+    flex: 1,
+    backgroundColor: "#E3E5EC",
+    marginTop: 4,
+    marginBottom: 0,
+  },
+  tlCard: {
+    flex: 1,
+    paddingBottom: 14,
+  },
+  tlCardInner: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#EBEBF0",
+    padding: 14,
+    gap: 12,
+    alignItems: "center",
+  },
+  tlCardText: {
+    flex: 1,
+    gap: 3,
+  },
+  tlCardTitle: {
+    color: "#20212B",
+    fontSize: 16,
+    fontWeight: "800",
+    lineHeight: 22,
+  },
+  tlCardMeta: {
+    color: "#9096A2",
+    fontSize: 12,
+    fontWeight: "600",
+    marginTop: 2,
+  },
+  tlCardDesc: {
+    color: "#6D6F7A",
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "500",
+    marginTop: 2,
+  },
+  tlCardMore: {
+    color: "#B0B3BE",
+    fontSize: 14,
+    fontWeight: "700",
+    marginTop: 6,
+    letterSpacing: 1,
+  },
+  tlCardThumb: {
+    width: 72,
+    height: 72,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  tlCardThumbDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    opacity: 0.7,
   },
   timelinePanel: {
     borderRadius: 8,
