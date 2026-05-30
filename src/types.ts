@@ -1,0 +1,134 @@
+export type Rating = 1 | 2 | 3 | 4 | 5;
+
+export type VisitOutcome =
+  | '약 추가'
+  | '약 변경'
+  | '증량'
+  | '감량'
+  | '유지'
+  | '상담'
+  | '검사';
+
+export type Visit = {
+  id: string;
+  date: string;
+  hospitalName: string;
+  doctorName: string;
+  cost: number;
+  nextAppointment?: {
+    date: string;
+    time: string;
+  };
+  notes: string;
+  outcomes: VisitOutcome[];
+};
+
+export type MedicationStatus = 'active' | 'archived';
+
+export type Medication = {
+  id: string;
+  name: string;
+  dose: string;
+  frequency: string;
+  startDate: string;
+  endDate?: string;
+  status: MedicationStatus;
+  purpose?: string;
+  memo?: string;
+};
+
+export type MedicationEventType =
+  | 'start'
+  | 'increase'
+  | 'decrease'
+  | 'maintain'
+  | 'stop'
+  | 'change';
+
+export type MedicationEvent = {
+  id: string;
+  date: string;
+  medicationName: string;
+  title: string;
+  description: string;
+  type: MedicationEventType;
+};
+
+export type SymptomType =
+  | '불안'
+  | '우울'
+  | '공황'
+  | '무기력'
+  | '집중력 저하'
+  | '수면 문제'
+  | '과민반응';
+
+export type SymptomLog = {
+  id: string;
+  date: string;
+  symptom: SymptomType;
+  level: Rating;
+  situation?: string;
+  memo?: string;
+};
+
+export type SideEffectType =
+  | '졸림'
+  | '두통'
+  | '어지러움'
+  | '불면'
+  | '메스꺼움'
+  | '입마름'
+  | '식욕 증가'
+  | '식욕 감소';
+
+export type SideEffectLog = {
+  id: string;
+  date: string;
+  effects: SideEffectType[];
+  intensity: Rating;
+  memo?: string;
+};
+
+export type EffectLog = {
+  id: string;
+  date: string;
+  anxietyRelief: Rating;
+  depressionRelief: Rating;
+  sleepImprovement: Rating;
+  focusImprovement: Rating;
+  memo?: string;
+};
+
+export type DoctorQuestion = {
+  id: string;
+  text: string;
+  createdAt: string;
+  resolved: boolean;
+};
+
+export type PsycheData = {
+  visits: Visit[];
+  medications: Medication[];
+  medicationEvents: MedicationEvent[];
+  symptomLogs: SymptomLog[];
+  sideEffectLogs: SideEffectLog[];
+  effectLogs: EffectLog[];
+  questions: DoctorQuestion[];
+};
+
+export type TimelineItemType =
+  | 'visit'
+  | 'medication'
+  | 'symptom'
+  | 'sideEffect'
+  | 'effect';
+
+export type TimelineItem = {
+  id: string;
+  date: string;
+  title: string;
+  description: string;
+  type: TimelineItemType;
+  accent: string;
+};
