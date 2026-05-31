@@ -7,6 +7,7 @@ import type {
   EffectLog,
   Medication,
   MedicationEvent,
+  MedicationLog,
   PsycheData,
   SideEffectLog,
   SymptomLog,
@@ -136,6 +137,13 @@ export const usePsycheData = () => {
     }));
   }, []);
 
+  const addMedicationLog = useCallback((log: Omit<MedicationLog, 'id'>) => {
+    setData((current) => ({
+      ...current,
+      medicationLogs: [{ ...log, id: createId('medlog') }, ...(current.medicationLogs ?? [])],
+    }));
+  }, []);
+
   const addMedicationEvent = useCallback((event: Omit<MedicationEvent, 'id'>) => {
     setData((current) => ({
       ...current,
@@ -154,6 +162,7 @@ export const usePsycheData = () => {
       addVisit,
       addMedication,
       addMedicationEvent,
+      addMedicationLog,
       addSymptomLog,
       addSideEffectLog,
       addEffectLog,
@@ -167,6 +176,7 @@ export const usePsycheData = () => {
       addVisit,
       addMedication,
       addMedicationEvent,
+      addMedicationLog,
       addSymptomLog,
       addSideEffectLog,
       addEffectLog,

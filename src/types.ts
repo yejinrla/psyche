@@ -52,6 +52,9 @@ export type MedicationEvent = {
   title: string;
   description: string;
   type: MedicationEventType;
+  fromDose?: string;
+  toDose?: string;
+  frequency?: string;
 };
 
 export type SymptomType =
@@ -115,6 +118,7 @@ export type PsycheData = {
   sideEffectLogs: SideEffectLog[];
   effectLogs: EffectLog[];
   questions: DoctorQuestion[];
+  medicationLogs: MedicationLog[];
 };
 
 export type TimelineItemType =
@@ -131,4 +135,43 @@ export type TimelineItem = {
   description: string;
   type: TimelineItemType;
   accent: string;
+};
+
+export type TabKey = 'home' | 'records' | 'medications' | 'timeline' | 'report';
+
+export type MedicationLog = {
+  id: string;
+  date: string;
+  time: string;
+  medicationName: string;
+  dose: string;
+  sideEffects?: SideEffectType[];
+  sideEffectIntensity?: Rating;
+  memo?: string;
+};
+
+export type ModalKind =
+  | 'visit'
+  | 'symptom'
+  | 'sideEffect'
+  | 'question'
+  | 'medication'
+  | 'effect'
+  | 'medicationLog'
+  | null;
+
+export type DailyMedicationInfo = {
+  name: string;
+  englishName: string;
+  brandName: string;
+  ingredient: string;
+  category: string;
+  dose: string;
+  quantity: string;
+  schedule: string;
+  purpose: string;
+  description: string;
+  sideEffects: { emoji: string; name: string; freq: string; myCount?: number }[];
+  caution: string;
+  isActive: boolean;
 };

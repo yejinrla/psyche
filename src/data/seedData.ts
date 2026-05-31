@@ -83,6 +83,8 @@ export const seedData: PsycheData = {
       title: '에스시탈로프람 시작',
       description: '5mg, 하루 1회로 복용 시작',
       type: 'start',
+      toDose: '5mg',
+      frequency: '하루 1회 · 아침',
     },
     {
       id: 'event-2026-02-05-propranolol',
@@ -91,6 +93,8 @@ export const seedData: PsycheData = {
       title: '프로프라놀롤 추가',
       description: '긴장 상황에서 필요 시 복용',
       type: 'start',
+      toDose: '10mg',
+      frequency: '필요 시',
     },
     {
       id: 'event-2026-03-07-escitalopram-up',
@@ -99,6 +103,9 @@ export const seedData: PsycheData = {
       title: '에스시탈로프람 증량',
       description: '5mg에서 10mg으로 증량',
       type: 'increase',
+      fromDose: '5mg',
+      toDose: '10mg',
+      frequency: '하루 1회 · 아침',
     },
     {
       id: 'event-2026-05-17-maintain',
@@ -107,6 +114,8 @@ export const seedData: PsycheData = {
       title: '현재 용량 유지',
       description: '효과와 부작용을 4주 더 관찰',
       type: 'maintain',
+      toDose: '10mg',
+      frequency: '하루 1회 · 아침',
     },
   ],
   symptomLogs: [
@@ -210,6 +219,7 @@ export const seedData: PsycheData = {
       memo: '수면은 나아졌으나 오후 졸림은 남아 있음',
     },
   ],
+  medicationLogs: [],
   questions: [
     {
       id: 'question-1',
