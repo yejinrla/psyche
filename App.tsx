@@ -22,12 +22,14 @@ import {
   CheckCircle2,
   ChevronRight,
   CircleUserRound,
+  Clock,
   ClipboardList,
   FileText,
   GitBranch,
   HeartPulse,
   Home,
   Hospital,
+  MapPin,
   MessageSquare,
   MoreHorizontal,
   Pill,
@@ -99,6 +101,16 @@ type ModalKind =
   | "effect"
   | null;
 
+type DailyMedicationInfo = {
+  name: string;
+  ingredient: string;
+  dose: string;
+  quantity: string;
+  schedule: string;
+  purpose: string;
+  memo: string;
+};
+
 const tabs: { key: TabKey; label: string; icon: IconComponent }[] = [
   { key: "home", label: "홈", icon: Home },
   { key: "timeline", label: "타임라인", icon: GitBranch },
@@ -113,6 +125,8 @@ export default function App() {
   const actions = usePsycheData();
   const [activeTab, setActiveTab] = useState<TabKey>("home");
   const [modalKind, setModalKind] = useState<ModalKind>(null);
+  const [medicationInfo, setMedicationInfo] =
+    useState<DailyMedicationInfo | null>(null);
 
   const timeline = useMemo(() => buildTimeline(actions.data), [actions.data]);
 
@@ -121,7 +135,13 @@ export default function App() {
   const renderScreen = () => {
     switch (activeTab) {
       case "home":
-        return <HomeScreen data={actions.data} openModal={openModal} />;
+        return (
+          <HomeScreen
+            data={actions.data}
+            openModal={openModal}
+            onOpenMedicationInfo={setMedicationInfo}
+          />
+        );
       case "records":
         return <RecordsScreen data={actions.data} openModal={openModal} />;
       case "medications":
@@ -154,6 +174,10 @@ export default function App() {
         kind={modalKind}
         actions={actions}
         onClose={() => setModalKind(null)}
+      />
+      <MedicationInfoDialog
+        medication={medicationInfo}
+        onClose={() => setMedicationInfo(null)}
       />
     </SafeAreaView>
   );
@@ -231,9 +255,11 @@ function TabBar({
 function HomeScreen({
   data,
   openModal,
+  onOpenMedicationInfo,
 }: {
   data: PsycheData;
   openModal: (kind: Exclude<ModalKind, null>) => void;
+  onOpenMedicationInfo: (medication: DailyMedicationInfo) => void;
 }) {
   const activeMeds = activeMedications(data.medications);
   const appointmentVisit = useMemo(() => {
@@ -243,6 +269,7 @@ function HomeScreen({
           ? [
               {
                 hospitalName: visit.hospitalName,
+                doctorName: visit.doctorName,
                 appointment: visit.nextAppointment,
               },
             ]
@@ -254,6 +281,8 @@ function HomeScreen({
       ({ appointment }) => appointment.date >= todayISO(),
     );
   }, [data.visits]);
+  const appointmentHospital = appointmentVisit?.hospitalName ?? "온유 정신건강의학과";
+  const appointmentDoctor = appointmentVisit?.doctorName?.trim() ?? "";
   const appointment = appointmentVisit?.appointment ?? latestAppointment(data);
   const symptomValues = sortByDateAsc(data.symptomLogs)
     .slice(-5)
@@ -304,19 +333,47 @@ function HomeScreen({
 
       <SleepCard />
 
-      <TimeOfDayCard />
+      <TimeOfDayCard onOpenMedicationInfo={onOpenMedicationInfo} />
 
       <Pressable
-        style={styles.checkMiniCardFull}
+        style={styles.nextVisitCard}
         onPress={() => openModal("visit")}
       >
-        <CalendarDays color="#4025E8" size={28} strokeWidth={2.3} />
-        <Text style={styles.miniCardTitle}>다음 진료</Text>
-        <Text style={styles.miniCardMeta}>
-          {appointment
-            ? `${toDotMonthDay(appointment.date)} · d-${Math.max(daysUntil(appointment.date), 0)}`
-            : "일정 없음"}
-        </Text>
+        <View style={styles.nextVisitHeader}>
+          <View style={styles.nextVisitTitleBlock}>
+            <View style={styles.nextVisitTitleRow}>
+              <Hospital color="#20212B" size={20} strokeWidth={2.4} />
+              <Text style={styles.nextVisitHospital}>다음 진료 일정</Text>
+            </View>
+          </View>
+          {appointment && (
+            <View style={styles.nextVisitDdayBadge}>
+              <Text style={styles.nextVisitDdayText}>
+                D-{Math.max(daysUntil(appointment.date), 0)}
+              </Text>
+            </View>
+          )}
+        </View>
+        <View style={styles.nextVisitInfoList}>
+          <View style={styles.nextVisitInfoRow}>
+            <Clock color="#9A9AA7" size={15} strokeWidth={2.4} />
+            <Text style={styles.nextVisitInfoText}>
+              <Text style={styles.nextVisitInfoMuted}>
+                {appointment ? `${toDotMonthDay(appointment.date)} · ` : ""}
+              </Text>
+              <Text style={styles.nextVisitInfoStrong}>
+                {appointment?.time ?? "미정"}
+              </Text>
+            </Text>
+          </View>
+          <View style={styles.nextVisitInfoRow}>
+            <MapPin color="#9A9AA7" size={15} strokeWidth={2.4} />
+            <Text style={styles.nextVisitInfoText}>
+              {appointmentHospital}
+              {appointmentDoctor ? ` · ${appointmentDoctor} 원장` : ""}
+            </Text>
+          </View>
+        </View>
       </Pressable>
     </ScrollView>
   );
@@ -554,7 +611,11 @@ function SleepCard() {
   );
 }
 
-function TimeOfDayCard() {
+function TimeOfDayCard({
+  onOpenMedicationInfo,
+}: {
+  onOpenMedicationInfo: (medication: DailyMedicationInfo) => void;
+}) {
   const [selected, setSelected] = useState<TimeOfDay>("아침");
   const options: TimeOfDay[] = ["아침", "점심", "저녁", "취침전"];
 
@@ -588,29 +649,155 @@ function TimeOfDayCard() {
         {medications.map(({ name, qty }, i) => {
           const done = !!checked[name];
           return (
-            <Pressable
+            <View
               key={name}
               style={[
                 styles.timeOfDayMedRow,
                 i < medications.length - 1 && styles.timeOfDayMedRowBorder,
               ]}
-              onPress={() => toggle(name)}
             >
-              <View style={[styles.medCheckCircle, done && styles.medCheckCircleDone]}>
+              <Pressable
+                style={[styles.medCheckCircle, done && styles.medCheckCircleDone]}
+                onPress={() => toggle(name)}
+              >
                 {done ? <Text style={styles.medCheckMark}>✓</Text> : null}
-              </View>
+              </Pressable>
               <Text style={[styles.timeOfDayMedText, done && styles.timeOfDayMedTextDone]}>
                 {name}
               </Text>
               <Text style={[styles.timeOfDayMedQty, done && styles.timeOfDayMedTextDone]}>
                 {qty}정
               </Text>
-              <Pill color={done ? "#4025E8" : "#C5C3E0"} size={18} strokeWidth={2} />
-            </Pressable>
+              <Pressable
+                style={styles.medInfoButton}
+                onPress={() =>
+                  onOpenMedicationInfo({
+                    name,
+                    ingredient:
+                      name.includes("아리피졸") || name.includes("1mg")
+                        ? "Aripiprazole 아리피프라졸"
+                        : "성분 정보 미입력",
+                    dose: name.replace(/.*\s/, ""),
+                    quantity: `${qty}정`,
+                    schedule: selected,
+                    purpose: "오늘 복용할 약",
+                    memo: done ? "복약 완료" : "복약 전",
+                  })
+                }
+                accessibilityRole="button"
+                accessibilityLabel="약 정보 보기"
+              >
+                <Pill
+                  color={done ? "#C5C3E0" : "#4025E8"}
+                  size={18}
+                  strokeWidth={2.2}
+                />
+              </Pressable>
+            </View>
           );
         })}
       </View>
     </View>
+  );
+}
+
+function MedicationInfoDialog({
+  medication,
+  onClose,
+}: {
+  medication: DailyMedicationInfo | null;
+  onClose: () => void;
+}) {
+  return (
+    <Modal
+      visible={medication !== null}
+      animationType="slide"
+      transparent
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalBackdrop}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={styles.modalKeyboard}
+        >
+          <View style={[styles.modalSheet, styles.medInfoModalSheet]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>약 정보</Text>
+              <Pressable style={styles.iconButton} onPress={onClose}>
+                <X color={theme.text} size={21} strokeWidth={2.3} />
+              </Pressable>
+            </View>
+            {medication ? <MedicationInfoScreen medication={medication} /> : null}
+          </View>
+        </KeyboardAvoidingView>
+      </View>
+    </Modal>
+  );
+}
+
+function MedicationInfoScreen({
+  medication,
+}: {
+  medication: DailyMedicationInfo;
+}) {
+  return (
+    <ScrollView
+      contentContainerStyle={styles.medInfoPageContent}
+      showsVerticalScrollIndicator={false}
+    >
+      <View style={styles.medInfoVisual}>
+        <View style={styles.medInfoVisualBadge}>
+          <Pill color="#4025E8" size={54} strokeWidth={2.2} />
+        </View>
+      </View>
+
+      <View style={styles.medInfoIntro}>
+        <Text style={styles.medInfoName}>{medication.name}</Text>
+        <Text style={styles.medInfoPurpose}>{medication.purpose}</Text>
+        <View style={styles.medInfoEffectBlock}>
+          <Text style={styles.medInfoEffectTitle}>효능 · 효과</Text>
+          <Text style={styles.medInfoDescription}>
+            1. 조현병{"\n"}
+            2. 양극성 장애와 관련된 급성 조증 및 혼재 삽화의 치료{"\n"}
+            3. 주요우울장애 치료의 부가요법제{"\n"}
+            4. 자폐장애와 관련된 과민증{"\n"}
+            5. 뚜렛장애
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.medInfoStatsCard}>
+        <View style={styles.medInfoStatRow}>
+          <Sparkles color="#33333A" size={18} strokeWidth={2.2} />
+          <Text style={styles.medInfoStatLabel}>성분</Text>
+          <Text style={styles.medInfoStatValue}>{medication.ingredient}</Text>
+        </View>
+        <View style={styles.medInfoStatDivider} />
+        <View style={styles.medInfoStatRow}>
+          <Pill color="#33333A" size={18} strokeWidth={2.2} />
+          <Text style={styles.medInfoStatLabel}>용량</Text>
+          <Text style={styles.medInfoStatValue}>{medication.dose}</Text>
+        </View>
+        <View style={styles.medInfoStatDivider} />
+        <View style={styles.medInfoStatRow}>
+          <Activity color="#33333A" size={18} strokeWidth={2.2} />
+          <Text style={styles.medInfoStatLabel}>복용량</Text>
+          <Text style={styles.medInfoStatValue}>{medication.quantity}</Text>
+        </View>
+        <View style={styles.medInfoStatDivider} />
+        <View style={styles.medInfoStatRow}>
+          <Clock color="#33333A" size={18} strokeWidth={2.2} />
+          <Text style={styles.medInfoStatLabel}>시간</Text>
+          <Text style={styles.medInfoStatValue}>{medication.schedule}</Text>
+        </View>
+        <View style={styles.medInfoStatDivider} />
+        <View style={styles.medInfoStatRow}>
+          <ClipboardList color="#33333A" size={18} strokeWidth={2.2} />
+          <Text style={styles.medInfoStatLabel}>메모</Text>
+          <Text style={styles.medInfoStatValue}>{medication.memo}</Text>
+        </View>
+      </View>
+    </ScrollView>
   );
 }
 
@@ -997,7 +1184,7 @@ function TimelineScreen({ timeline }: { timeline: TimelineItem[] }) {
             <Bell color="#20212B" size={20} strokeWidth={2.6} />
           </Pressable>
         </View>
-        <Text style={[styles.morningTitle, { textAlign: "left", marginTop: 2 }]}>치료 타임라인</Text>
+        <Text style={[styles.morningTitle, { textAlign: "left", marginTop: 2 }]}>타임라인</Text>
 
         <View style={styles.tlSearchBar}>
           <Search color="#9096A2" size={16} strokeWidth={2.2} />
@@ -1331,50 +1518,52 @@ function VisitForm({
   };
 
   return (
-    <View style={styles.formStack}>
-      <TextField
+    <View style={styles.visitFormStack}>
+      <VisitTextField
         label="방문일"
         value={date}
         onChangeText={setDate}
         placeholder="YYYY-MM-DD"
       />
-      <TextField
+      <VisitTextField
         label="병원명"
         value={hospitalName}
         onChangeText={setHospitalName}
       />
-      <TextField
+      <VisitTextField
         label="담당 의사"
         value={doctorName}
         onChangeText={setDoctorName}
         placeholder="예: 김하린"
       />
-      <TextField
+      <VisitTextField
         label="진료비"
         value={cost}
         onChangeText={setCost}
         placeholder="예: 19800"
         keyboardType="number-pad"
       />
-      <Text style={styles.formLabel}>진료 결과</Text>
-      <OptionGrid
-        options={visitOutcomeOptions}
-        selected={outcomes}
-        onToggle={toggleOutcome}
-      />
-      <TextField
+      <View style={styles.visitOptionField}>
+        <Text style={styles.visitFieldLabel}>진료 결과</Text>
+        <OptionGrid
+          options={visitOutcomeOptions}
+          selected={outcomes}
+          onToggle={toggleOutcome}
+        />
+      </View>
+      <VisitTextField
         label="다음 예약일"
         value={nextDate}
         onChangeText={setNextDate}
         placeholder="YYYY-MM-DD"
       />
-      <TextField
+      <VisitTextField
         label="예약 시간"
         value={nextTime}
         onChangeText={setNextTime}
         placeholder="예: 14:00"
       />
-      <TextField
+      <VisitTextField
         label="진료 메모"
         value={notes}
         onChangeText={setNotes}
@@ -1798,9 +1987,6 @@ function OptionGrid<T extends string>({
             style={[styles.optionChip, isSelected && styles.optionChipSelected]}
             onPress={() => onToggle(option)}
           >
-            {isSelected ? (
-              <CheckCircle2 color={theme.surface} size={14} strokeWidth={2.5} />
-            ) : null}
             <Text
               style={[
                 styles.optionChipText,
@@ -1873,6 +2059,37 @@ function TextField({
         multiline={multiline}
         keyboardType={keyboardType}
         style={[styles.input, multiline && styles.multilineInput]}
+      />
+    </View>
+  );
+}
+
+function VisitTextField({
+  label,
+  value,
+  onChangeText,
+  placeholder,
+  multiline,
+  keyboardType,
+}: {
+  label: string;
+  value: string;
+  onChangeText: (value: string) => void;
+  placeholder?: string;
+  multiline?: boolean;
+  keyboardType?: "default" | "number-pad";
+}) {
+  return (
+    <View style={[styles.visitInputBox, multiline && styles.visitInputBoxTall]}>
+      <Text style={styles.visitFieldLabel}>{label}</Text>
+      <TextInput
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor="#C2C6CE"
+        multiline={multiline}
+        keyboardType={keyboardType}
+        style={[styles.visitInput, multiline && styles.visitMultilineInput]}
       />
     </View>
   );
@@ -2078,6 +2295,204 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 28,
     gap: 16,
+  },
+  medInfoPageContent: {
+    paddingHorizontal: 0,
+    paddingTop: 0,
+    paddingBottom: 20,
+    gap: 0,
+  },
+  medInfoPageHeader: {
+    minHeight: 48,
+    paddingHorizontal: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  medInfoBackButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  medInfoPageTitle: {
+    color: "#20212B",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  medInfoHeaderSpacer: {
+    width: 40,
+    height: 40,
+  },
+  medInfoVisual: {
+    height: 160,
+    marginTop: 2,
+    backgroundColor: "#DAD7F2",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  medInfoVisualBadge: {
+    width: 112,
+    height: 112,
+    borderRadius: 34,
+    backgroundColor: "#F5F4FC",
+    alignItems: "center",
+    justifyContent: "center",
+    transform: [{ rotate: "-12deg" }],
+  },
+  medInfoIntro: {
+    paddingHorizontal: 18,
+    paddingTop: 28,
+    paddingBottom: 22,
+    gap: 12,
+  },
+  medInfoHeroCard: {
+    borderRadius: 22,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E1E0EE",
+    padding: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+  medInfoHeroIcon: {
+    width: 54,
+    height: 54,
+    borderRadius: 18,
+    backgroundColor: "#EEEDF8",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  medInfoHeroText: {
+    flex: 1,
+    gap: 5,
+  },
+  medInfoName: {
+    color: "#20212B",
+    fontSize: 26,
+    fontWeight: "800",
+    lineHeight: 32,
+  },
+  medInfoPurpose: {
+    color: "#5E5E66",
+    fontSize: 15,
+    fontWeight: "500",
+    lineHeight: 22,
+  },
+  medInfoDescription: {
+    color: "#5E5E66",
+    fontSize: 14,
+    lineHeight: 22,
+    fontWeight: "500",
+  },
+  medInfoEffectBlock: {
+    marginTop: 8,
+    gap: 10,
+  },
+  medInfoEffectTitle: {
+    color: "#3C3C44",
+    fontSize: 15,
+    lineHeight: 21,
+    fontWeight: "700",
+  },
+  medInfoGrid: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  medInfoTile: {
+    flex: 1,
+    borderRadius: 18,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E1E0EE",
+    paddingVertical: 16,
+    paddingHorizontal: 14,
+    gap: 8,
+  },
+  medInfoTileLabel: {
+    color: "#9096A2",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  medInfoTileValue: {
+    color: "#20212B",
+    fontSize: 20,
+    fontWeight: "900",
+  },
+  medInfoPanel: {
+    borderRadius: 22,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E1E0EE",
+    padding: 18,
+    gap: 14,
+  },
+  medInfoRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  medInfoRowLabel: {
+    color: "#9096A2",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  medInfoRowValue: {
+    color: "#20212B",
+    fontSize: 15,
+    fontWeight: "700",
+    lineHeight: 21,
+    marginTop: 2,
+  },
+  medInfoDivider: {
+    height: 1,
+    backgroundColor: "#EFEFF5",
+  },
+  medInfoStatsCard: {
+    marginHorizontal: 18,
+    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+  },
+  medInfoStatRow: {
+    minHeight: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  medInfoStatLabel: {
+    width: 60,
+    color: "#33333A",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  medInfoStatValue: {
+    flex: 1,
+    color: "#62626A",
+    fontSize: 13,
+    fontWeight: "500",
+    textAlign: "right",
+  },
+  medInfoStatDivider: {
+    height: 1,
+    backgroundColor: "#DADADF",
+  },
+  medInfoPrimaryButton: {
+    minHeight: 60,
+    marginHorizontal: 18,
+    marginTop: 28,
+    borderRadius: 16,
+    backgroundColor: "#20212B",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  medInfoPrimaryButtonText: {
+    color: "#EEEDF8",
+    fontSize: 14,
+    fontWeight: "800",
   },
   homeContent: {
     paddingHorizontal: 10,
@@ -2350,6 +2765,123 @@ const styles = StyleSheet.create({
     color: "#4025E8",
     fontWeight: "800",
   },
+  nextVisitCard: {
+    borderRadius: 22,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E1E0EE",
+    paddingHorizontal: 18,
+    paddingVertical: 18,
+  },
+  nextVisitHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  nextVisitTitleBlock: {
+    flex: 1,
+    gap: 7,
+  },
+  nextVisitTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  nextVisitCategoryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  nextVisitCategoryDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 3,
+    backgroundColor: "#20212B",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  nextVisitEyebrow: {
+    color: "#6F7280",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  nextVisitHospital: {
+    color: "#20212B",
+    fontSize: 17,
+    fontWeight: "800",
+  },
+  nextVisitInfo: {
+    color: "#7F8491",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  nextVisitInfoList: {
+    marginTop: 14,
+    gap: 8,
+  },
+  nextVisitInfoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+  },
+  nextVisitInfoText: {
+    flex: 1,
+    color: "#6F7280",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  nextVisitInfoMuted: {
+    color: "#8F92A0",
+    fontWeight: "600",
+  },
+  nextVisitInfoStrong: {
+    color: "#4025E8",
+    fontWeight: "800",
+  },
+  nextVisitDdayBadge: {
+    minHeight: 30,
+    paddingHorizontal: 12,
+    borderRadius: 15,
+    backgroundColor: "#EEEDF8",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  nextVisitDdayText: {
+    color: "#4025E8",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  nextVisitMetaRow: {
+    marginTop: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  nextVisitDateBlock: {
+    flex: 1,
+    backgroundColor: "#EEEDF8",
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+    gap: 4,
+  },
+  nextVisitMetaLabel: {
+    color: "#9096A2",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  nextVisitDate: {
+    color: "#20212B",
+    fontSize: 22,
+    fontWeight: "800",
+  },
+  nextVisitMetaDivider: {
+    width: 12,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: "#C5C3E0",
+  },
   anxietySheet: {
     position: "absolute",
     bottom: 0,
@@ -2538,6 +3070,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     marginRight: 4,
+  },
+  medInfoButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
   },
   moodAvatarRow: {
     flexDirection: "row",
@@ -3700,13 +4239,22 @@ const styles = StyleSheet.create({
   },
   modalKeyboard: {
     width: "100%",
+    maxWidth: 390,
+    alignSelf: "center",
   },
   modalSheet: {
+    width: "100%",
     maxHeight: "88%",
     borderTopLeftRadius: 8,
     borderTopRightRadius: 8,
     backgroundColor: theme.background,
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingTop: 18,
+    paddingBottom: 20,
+  },
+  medInfoModalSheet: {
+    maxHeight: "84%",
+    paddingTop: 14,
   },
   modalHeader: {
     minHeight: 42,
@@ -3731,6 +4279,49 @@ const styles = StyleSheet.create({
   formStack: {
     gap: 13,
     paddingBottom: 22,
+  },
+  visitFormStack: {
+    gap: 12,
+    paddingBottom: 22,
+  },
+  visitInputBox: {
+    minHeight: 64,
+    borderRadius: 14,
+    backgroundColor: "#F0F2F6",
+    paddingHorizontal: 14,
+    paddingTop: 9,
+    paddingBottom: 10,
+    justifyContent: "center",
+  },
+  visitInputBoxTall: {
+    minHeight: 108,
+    justifyContent: "flex-start",
+  },
+  visitFieldLabel: {
+    color: "#9AA0AA",
+    fontSize: 11,
+    lineHeight: 15,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  visitInput: {
+    minHeight: 28,
+    color: "#20212B",
+    padding: 0,
+    fontSize: 15,
+    lineHeight: 20,
+    fontWeight: "500",
+  },
+  visitMultilineInput: {
+    minHeight: 68,
+    textAlignVertical: "top",
+  },
+  visitOptionField: {
+    borderRadius: 14,
+    backgroundColor: "#F0F2F6",
+    paddingHorizontal: 14,
+    paddingTop: 10,
+    paddingBottom: 12,
   },
   formLabel: {
     color: theme.text,
@@ -3757,31 +4348,32 @@ const styles = StyleSheet.create({
   optionGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    gap: 7,
   },
   optionChip: {
-    minHeight: 36,
-    paddingHorizontal: 11,
-    borderRadius: 8,
-    backgroundColor: theme.surface,
+    minHeight: 28,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: "transparent",
     borderWidth: 1,
-    borderColor: theme.line,
+    borderColor: "#20212B",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 5,
   },
   optionChipSelected: {
-    backgroundColor: theme.teal,
-    borderColor: theme.teal,
+    backgroundColor: "#20212B",
+    borderColor: "#20212B",
   },
   optionChipText: {
-    color: theme.text,
-    fontSize: 13,
-    fontWeight: "800",
+    color: "#20212B",
+    fontSize: 12,
+    fontWeight: "500",
   },
   optionChipTextSelected: {
     color: theme.surface,
+    fontWeight: "600",
   },
   ratingControl: {
     height: 46,
