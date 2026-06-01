@@ -64,7 +64,7 @@ export default function App() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
       <View style={styles.appShell}>
-        {activeTab !== "home" && activeTab !== "timeline" ? (
+        {activeTab !== "home" && activeTab !== "timeline" && activeTab !== "records" ? (
           <AppHeader openModal={openModal} />
         ) : null}
         <View style={styles.screen}>{renderScreen()}</View>

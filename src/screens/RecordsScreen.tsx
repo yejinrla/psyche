@@ -6,12 +6,12 @@ import {
   Text,
   View,
 } from "react-native";
-import { Activity, AlertTriangle, Bell, ChevronLeft, ChevronRight, Hospital } from "lucide-react-native";
+import { Activity, Bell, ChevronLeft, ChevronRight, Hospital } from "lucide-react-native";
 import {
   RatingBadge,
-  SectionHeader,
   SegmentedControl,
 } from "../components/SharedComponents";
+import { ButterflyIcon } from "../components/ButterflyIcon";
 import { theme } from "../constants";
 import { formatFullDate, formatShortDate, sortByDateDesc } from "../utils/date";
 import type { MedicationEvent, ModalKind, PsycheData, Visit } from "../types";
@@ -173,13 +173,17 @@ export function RecordsScreen({
   data: PsycheData;
   openModal: (kind: Exclude<ModalKind, null>) => void;
 }) {
-  const [segment, setSegment] = useState<"visits" | "symptoms" | "sideEffects">(
+  const [segment, setSegment] = useState<"visits" | "symptomSideEffects">(
     "visits",
   );
   const [selectedVisit, setSelectedVisit] = useState<{ visit: Visit; index: number } | null>(null);
   const visits = sortByDateDesc(data.visits);
   const symptoms = sortByDateDesc(data.symptomLogs);
   const sideEffects = sortByDateDesc(data.sideEffectLogs);
+  const symptomSideEffects = [
+    ...symptoms.map((log) => ({ kind: "symptom" as const, log })),
+    ...sideEffects.map((log) => ({ kind: "sideEffect" as const, log })),
+  ].sort((a, b) => b.log.date.localeCompare(a.log.date));
 
   if (selectedVisit) {
     const matchedEvents = (data.medicationEvents ?? []).filter(
@@ -200,13 +204,24 @@ export function RecordsScreen({
       contentContainerStyle={styles.screenContent}
       showsVerticalScrollIndicator={false}
     >
-      <SectionHeader title="치료 기록" />
+      <View style={styles.recordsHeader}>
+        <View style={styles.recordsTopRow}>
+          <View style={styles.headerBrand}>
+            <ButterflyIcon color="#4025E8" />
+          </View>
+          <View style={styles.headerBrandSpacer} />
+          <Pressable style={styles.notificationButton}>
+            <Bell color="#20212B" size={20} strokeWidth={2.6} />
+          </Pressable>
+        </View>
+        <Text style={styles.recordsTitle}>기록</Text>
+      </View>
+
       <SegmentedControl
         value={segment}
         options={[
           { label: "방문", value: "visits" },
-          { label: "증상", value: "symptoms" },
-          { label: "부작용", value: "sideEffects" },
+          { label: "증상·부작용", value: "symptomSideEffects" },
         ]}
         onChange={setSegment}
       />
@@ -259,53 +274,48 @@ export function RecordsScreen({
         </View>
       ) : null}
 
-      {segment === "symptoms" ? (
+      {segment === "symptomSideEffects" ? (
         <View style={styles.listStack}>
           <Pressable
             style={styles.fullWidthAction}
             onPress={() => openModal("symptom")}
           >
             <Activity color={theme.surface} size={19} strokeWidth={2.3} />
-            <Text style={styles.fullWidthActionText}>증상 기록 추가</Text>
+            <Text style={styles.fullWidthActionText}>증상 추가</Text>
           </Pressable>
-          {symptoms.map((log) => (
-            <View key={log.id} style={styles.recordPanel}>
-              <View style={styles.rowBetween}>
-                <Text style={styles.itemTitle}>{log.symptom}</Text>
-                <RatingBadge rating={log.level} />
+          {symptomSideEffects.map((item) => (
+            item.kind === "symptom" ? (
+              <View key={`symptom-${item.log.id}`} style={styles.recordPanel}>
+                <View style={styles.rowBetween}>
+                  <View>
+                    <Text style={styles.itemTitle}>{item.log.symptom}</Text>
+                    <Text style={styles.recordTypeText}>증상</Text>
+                  </View>
+                  <RatingBadge rating={item.log.level} />
+                </View>
+                <Text style={styles.itemMeta}>{formatFullDate(item.log.date)}</Text>
+                {item.log.situation ? (
+                  <Text style={styles.recordBody}>상황: {item.log.situation}</Text>
+                ) : null}
+                {item.log.memo ? (
+                  <Text style={styles.recordBody}>{item.log.memo}</Text>
+                ) : null}
               </View>
-              <Text style={styles.itemMeta}>{formatFullDate(log.date)}</Text>
-              {log.situation ? (
-                <Text style={styles.recordBody}>상황: {log.situation}</Text>
-              ) : null}
-              {log.memo ? (
-                <Text style={styles.recordBody}>{log.memo}</Text>
-              ) : null}
-            </View>
-          ))}
-        </View>
-      ) : null}
-
-      {segment === "sideEffects" ? (
-        <View style={styles.listStack}>
-          <Pressable
-            style={styles.fullWidthAction}
-            onPress={() => openModal("sideEffect")}
-          >
-            <AlertTriangle color={theme.surface} size={19} strokeWidth={2.3} />
-            <Text style={styles.fullWidthActionText}>부작용 기록 추가</Text>
-          </Pressable>
-          {sideEffects.map((log) => (
-            <View key={log.id} style={styles.recordPanel}>
-              <View style={styles.rowBetween}>
-                <Text style={styles.itemTitle}>{log.effects.join(", ")}</Text>
-                <RatingBadge rating={log.intensity} />
+            ) : (
+              <View key={`sideEffect-${item.log.id}`} style={styles.recordPanel}>
+                <View style={styles.rowBetween}>
+                  <View>
+                    <Text style={styles.itemTitle}>{item.log.effects.join(", ")}</Text>
+                    <Text style={styles.recordTypeText}>부작용</Text>
+                  </View>
+                  <RatingBadge rating={item.log.intensity} />
+                </View>
+                <Text style={styles.itemMeta}>{formatFullDate(item.log.date)}</Text>
+                {item.log.memo ? (
+                  <Text style={styles.recordBody}>{item.log.memo}</Text>
+                ) : null}
               </View>
-              <Text style={styles.itemMeta}>{formatFullDate(log.date)}</Text>
-              {log.memo ? (
-                <Text style={styles.recordBody}>{log.memo}</Text>
-              ) : null}
-            </View>
+            )
           ))}
         </View>
       ) : null}
@@ -315,9 +325,51 @@ export function RecordsScreen({
 
 const styles = StyleSheet.create({
   screenContent: {
-    padding: 20,
-    paddingBottom: 28,
-    gap: 16,
+    paddingHorizontal: 10,
+    paddingTop: 8,
+    paddingBottom: 122,
+    gap: 14,
+  },
+  recordsHeader: {
+    paddingHorizontal: 10,
+  },
+  recordsTopRow: {
+    minHeight: 38,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  headerBrand: {
+    width: 36,
+    minHeight: 40,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  headerBrandSpacer: {
+    flex: 1,
+  },
+  notificationButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#20212B",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  recordsTitle: {
+    color: "#20212B",
+    fontSize: 28,
+    fontWeight: "900",
+    letterSpacing: 0,
+    textAlign: "left",
+    marginTop: 2,
   },
   listStack: {
     gap: 12,
@@ -360,6 +412,12 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginTop: 4,
     fontWeight: "600",
+  },
+  recordTypeText: {
+    color: theme.teal,
+    fontSize: 11,
+    fontWeight: "800",
+    marginTop: 4,
   },
   costText: {
     color: theme.text,

@@ -1,6 +1,7 @@
 import React from "react";
 import {
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -155,8 +156,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingTop: 52,
-    paddingBottom: 12,
+    paddingTop: Platform.OS === "web" ? 24 : 52,
+    paddingBottom: 8,
     backgroundColor: "#F4F3F8",
   },
   medPageBack: {

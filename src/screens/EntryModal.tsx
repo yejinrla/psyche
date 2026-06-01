@@ -946,7 +946,7 @@ export function EntryModal({
                 </Pressable>
               </View>
             )}
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView key={kind ?? "closed"} showsVerticalScrollIndicator={false}>
               {kind === "visit" ? (
                 <VisitForm actions={actions} onDone={onClose} />
               ) : null}
@@ -990,9 +990,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalKeyboard: {
+    flex: 1,
     width: "100%",
     maxWidth: 390,
     alignSelf: "center",
+    justifyContent: "flex-end",
   },
   modalSheet: {
     width: "100%",

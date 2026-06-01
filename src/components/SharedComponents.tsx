@@ -641,13 +641,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: theme.surface,
     borderWidth: 1,
-    borderColor: theme.line,
+    borderColor: "#D9D6F3",
     alignItems: "center",
     justifyContent: "center",
   },
   ratingButtonActive: {
-    backgroundColor: theme.coral,
-    borderColor: theme.coral,
+    backgroundColor: theme.teal,
+    borderColor: theme.teal,
   },
   ratingText: {
     color: theme.text,

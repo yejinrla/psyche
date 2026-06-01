@@ -12,8 +12,15 @@ import { ButterflyIcon } from "../components/ButterflyIcon";
 import { TimelineEventRow } from "../components/SharedComponents";
 import type { TimelineItem } from "../types";
 
-const TIMELINE_FILTERS = ["진료", "개선", "약 변경", "부작용"] as const;
+const TIMELINE_FILTERS = ["진료", "증상", "복약", "부작용"] as const;
 type TimelineFilter = typeof TIMELINE_FILTERS[number];
+
+const FILTER_TYPES: Record<TimelineFilter, TimelineItem["type"][]> = {
+  진료: ["visit"],
+  증상: ["symptom", "effect"],
+  복약: ["medication"],
+  부작용: ["sideEffect"],
+};
 
 function buildWeekStrip() {
   const names = ["일", "월", "화", "수", "목", "금", "토"];
@@ -37,6 +44,14 @@ function buildWeekStrip() {
 export function TimelineScreen({ timeline }: { timeline: TimelineItem[] }) {
   const weekDays = useMemo(() => buildWeekStrip(), []);
   const [activeFilter, setActiveFilter] = useState<TimelineFilter | null>(null);
+  const visibleTimeline = useMemo(() => {
+    if (!activeFilter) {
+      return timeline;
+    }
+
+    const types = FILTER_TYPES[activeFilter];
+    return timeline.filter((item) => types.includes(item.type));
+  }, [activeFilter, timeline]);
 
   return (
     <ScrollView
@@ -88,7 +103,7 @@ export function TimelineScreen({ timeline }: { timeline: TimelineItem[] }) {
 
       <View style={styles.timelineCardList}>
         {Object.entries(
-          timeline.reduce<Record<string, TimelineItem[]>>((acc, item) => {
+          visibleTimeline.reduce<Record<string, TimelineItem[]>>((acc, item) => {
             (acc[item.date] = acc[item.date] ?? []).push(item);
             return acc;
           }, {})
