@@ -5,6 +5,7 @@ export const seedData: PsycheData = {
     {
       id: 'visit-2026-01-08',
       date: '2026-01-08',
+      time: '10:00',
       hospitalName: '온유 정신건강의학과',
       doctorName: '김하린',
       cost: 24100,
@@ -18,6 +19,7 @@ export const seedData: PsycheData = {
     {
       id: 'visit-2026-03-07',
       date: '2026-03-07',
+      time: '14:30',
       hospitalName: '온유 정신건강의학과',
       doctorName: '김하린',
       cost: 19800,
@@ -31,6 +33,7 @@ export const seedData: PsycheData = {
     {
       id: 'visit-2026-05-17',
       date: '2026-05-17',
+      time: '10:20',
       hospitalName: '온유 정신건강의학과',
       doctorName: '김하린',
       cost: 19800,
@@ -48,6 +51,7 @@ export const seedData: PsycheData = {
       name: '에스시탈로프람',
       dose: '10mg',
       frequency: '하루 1회',
+      schedule: ['아침'],
       startDate: '2026-01-08',
       status: 'active',
       purpose: '불안, 우울 증상 완화',
@@ -58,6 +62,7 @@ export const seedData: PsycheData = {
       name: '프로프라놀롤',
       dose: '10mg',
       frequency: '필요 시',
+      schedule: [],
       startDate: '2026-02-05',
       status: 'active',
       purpose: '긴장 및 심박 상승 완화',

@@ -12,6 +12,7 @@ export type VisitOutcome =
 export type Visit = {
   id: string;
   date: string;
+  time?: string;
   hospitalName: string;
   doctorName: string;
   cost: number;
@@ -25,11 +26,14 @@ export type Visit = {
 
 export type MedicationStatus = 'active' | 'archived';
 
+export type MealSchedule = '아침' | '점심' | '저녁' | '취침전';
+
 export type Medication = {
   id: string;
   name: string;
   dose: string;
   frequency: string;
+  schedule?: MealSchedule[];
   startDate: string;
   endDate?: string;
   status: MedicationStatus;
@@ -156,6 +160,7 @@ export type ModalKind =
   | 'sideEffect'
   | 'question'
   | 'medication'
+  | 'editMedication'
   | 'effect'
   | 'medicationLog'
   | null;

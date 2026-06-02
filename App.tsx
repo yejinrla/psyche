@@ -4,7 +4,7 @@ import { SafeAreaView, StyleSheet, View } from "react-native";
 
 import { theme } from "./src/constants";
 import { usePsycheData } from "./src/hooks/usePsycheData";
-import type { DailyMedicationInfo, ModalKind, TabKey } from "./src/types";
+import type { DailyMedicationInfo, Medication, ModalKind, TabKey } from "./src/types";
 import { buildTimeline } from "./src/utils/analytics";
 
 import { BottomTabBar } from "./src/components/BottomTabBar";
@@ -22,7 +22,7 @@ export default function App() {
   const actions = usePsycheData();
   const [activeTab, setActiveTab] = useState<TabKey>("home");
   const [modalKind, setModalKind] = useState<ModalKind>(null);
-  const [modalContext, setModalContext] = useState<{ medicationName?: string; dose?: string } | undefined>();
+  const [modalContext, setModalContext] = useState<{ medicationName?: string; dose?: string; medication?: Medication } | undefined>();
   const [medicationInfo, setMedicationInfo] =
     useState<DailyMedicationInfo | null>(null);
   const [reminderMedication, setReminderMedication] =
@@ -45,7 +45,20 @@ export default function App() {
       case "records":
         return <RecordsScreen data={actions.data} openModal={openModal} />;
       case "medications":
-        return <MedicationScreen data={actions.data} openModal={openModal} />;
+        return (
+          <MedicationScreen
+            data={actions.data}
+            openModal={openModal}
+            onEditMedication={(med) => {
+              setModalContext({ medication: med });
+              setModalKind("editMedication");
+            }}
+            onLogMedication={(med) => {
+              setModalContext({ medicationName: med.name, dose: med.dose });
+              setModalKind("medicationLog");
+            }}
+          />
+        );
       case "timeline":
         return <TimelineScreen timeline={timeline} />;
       case "report":

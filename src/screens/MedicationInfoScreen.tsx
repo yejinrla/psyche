@@ -8,23 +8,25 @@ import {
   Text,
   View,
 } from "react-native";
-import { ChevronLeft, Pill } from "lucide-react-native";
+import { ChevronLeft, Pencil, Pill } from "lucide-react-native";
 import type { DailyMedicationInfo } from "../types";
 
 export function MedicationInfoDialog({
   medication,
   onClose,
   onLogMedication,
+  onEdit,
 }: {
   medication: DailyMedicationInfo | null;
   onClose: () => void;
   onLogMedication?: (medication: DailyMedicationInfo) => void;
+  onEdit?: () => void;
 }) {
   return (
     <Modal
       visible={medication !== null}
-      animationType="fade"
-      transparent
+      animationType="slide"
+      transparent={false}
       onRequestClose={onClose}
     >
       <View style={styles.medPageOverlay}>
@@ -34,6 +36,7 @@ export function MedicationInfoDialog({
               medication={medication}
               onClose={onClose}
               onLogMedication={onLogMedication ? () => onLogMedication(medication) : undefined}
+              onEdit={onEdit}
             />
           ) : null}
         </View>
@@ -46,10 +49,12 @@ export function MedicationInfoScreen({
   medication,
   onClose,
   onLogMedication,
+  onEdit,
 }: {
   medication: DailyMedicationInfo;
   onClose: () => void;
   onLogMedication?: () => void;
+  onEdit?: () => void;
 }) {
   return (
     <View style={{ flex: 1, backgroundColor: "#F4F3F8" }}>
@@ -59,7 +64,14 @@ export function MedicationInfoScreen({
           <ChevronLeft color="#20212B" size={22} strokeWidth={2.5} />
         </Pressable>
         <Text style={styles.medPageTitle}>약 설명</Text>
-        <Text style={styles.medPageRight}>처방약</Text>
+        {onEdit ? (
+          <Pressable style={styles.medPageEditBtn} onPress={onEdit}>
+            <Pencil color="#4025E8" size={16} strokeWidth={2.4} />
+            <Text style={styles.medPageEditBtnText}>수정</Text>
+          </Pressable>
+        ) : (
+          <Text style={styles.medPageRight}>처방약</Text>
+        )}
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.medPageScroll}>
@@ -179,6 +191,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#4025E8",
     fontWeight: "600",
+  },
+  medPageEditBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: "#EBE8FD",
+  },
+  medPageEditBtnText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#4025E8",
   },
   medPageScroll: {
     paddingHorizontal: 18,

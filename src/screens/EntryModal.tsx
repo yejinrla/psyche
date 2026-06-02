@@ -25,6 +25,7 @@ import {
   visitOutcomeOptions,
 } from "../constants";
 import type {
+  Medication,
   ModalKind,
   Rating,
   SideEffectType,
@@ -46,6 +47,7 @@ function VisitForm({
   onDone: () => void;
 }) {
   const [date, setDate] = useState(todayISO());
+  const [time, setTime] = useState("");
   const [hospitalName, setHospitalName] = useState("온유 정신건강의학과");
   const [doctorName, setDoctorName] = useState("");
   const [cost, setCost] = useState("");
@@ -65,6 +67,7 @@ function VisitForm({
   const save = () => {
     actions.addVisit({
       date,
+      time: time.trim() || undefined,
       hospitalName: hospitalName.trim() || "병원명 미입력",
       doctorName: doctorName.trim() || "담당 의사 미입력",
       cost: Number(cost.replace(/[^\d]/g, "")) || 0,
@@ -87,6 +90,12 @@ function VisitForm({
         value={date}
         onChangeText={setDate}
         placeholder="YYYY-MM-DD"
+      />
+      <VisitTextField
+        label="방문 시간"
+        value={time}
+        onChangeText={setTime}
+        placeholder="예: 14:00"
       />
       <VisitTextField
         label="병원명"
@@ -299,6 +308,57 @@ function QuestionForm({
 // MedicationForm
 // ---------------------------------------------------------------------------
 
+const FREQUENCY_OPTIONS = ["하루 1회", "하루 2회", "하루 3회", "필요 시", "취침 전"];
+const SCHEDULE_OPTIONS = ["아침", "점심", "저녁", "취침전"] as const;
+type MealSchedule = typeof SCHEDULE_OPTIONS[number];
+
+function ScheduleChips({ value, onChange }: { value: MealSchedule[]; onChange: (v: MealSchedule[]) => void }) {
+  const toggle = (opt: MealSchedule) =>
+    onChange(value.includes(opt) ? value.filter(v => v !== opt) : [...value, opt]);
+  return (
+    <View>
+      <Text style={styles.formLabel}>복용 시간</Text>
+      <View style={styles.freqChipRow}>
+        {SCHEDULE_OPTIONS.map((opt) => (
+          <Pressable
+            key={opt}
+            style={[styles.freqChip, value.includes(opt) && styles.freqChipActive]}
+            onPress={() => toggle(opt)}
+          >
+            <Text style={[styles.freqChipText, value.includes(opt) && styles.freqChipTextActive]}>{opt}</Text>
+          </Pressable>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function FrequencyChips({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <View style={{ gap: 10 }}>
+      <Text style={styles.formLabel}>복용 횟수</Text>
+      <View style={styles.freqChipRow}>
+        {FREQUENCY_OPTIONS.map((opt) => (
+          <Pressable
+            key={opt}
+            style={[styles.freqChip, value === opt && styles.freqChipActive]}
+            onPress={() => onChange(opt)}
+          >
+            <Text style={[styles.freqChipText, value === opt && styles.freqChipTextActive]}>{opt}</Text>
+          </Pressable>
+        ))}
+      </View>
+      <TextInput
+        style={styles.freqInput}
+        value={value}
+        onChangeText={onChange}
+        placeholder="직접 입력"
+        placeholderTextColor="#C0C4CC"
+      />
+    </View>
+  );
+}
+
 function MedicationForm({
   actions,
   onDone,
@@ -309,6 +369,7 @@ function MedicationForm({
   const [name, setName] = useState("");
   const [dose, setDose] = useState("");
   const [frequency, setFrequency] = useState("하루 1회");
+  const [schedule, setSchedule] = useState<MealSchedule[]>([]);
   const [startDate, setStartDate] = useState(todayISO());
   const [purpose, setPurpose] = useState("");
   const [memo, setMemo] = useState("");
@@ -318,6 +379,7 @@ function MedicationForm({
       name: name.trim() || "약 이름 미입력",
       dose: dose.trim() || "용량 미입력",
       frequency: frequency.trim() || "복용 횟수 미입력",
+      schedule,
       startDate,
       purpose: purpose.trim(),
       memo: memo.trim(),
@@ -339,11 +401,8 @@ function MedicationForm({
         onChangeText={setDose}
         placeholder="예: 10mg"
       />
-      <TextField
-        label="복용 횟수"
-        value={frequency}
-        onChangeText={setFrequency}
-      />
+      <FrequencyChips value={frequency} onChange={setFrequency} />
+      <ScheduleChips value={schedule} onChange={setSchedule} />
       <TextField
         label="복용 시작일"
         value={startDate}
@@ -364,6 +423,70 @@ function MedicationForm({
         placeholder="복용 시간, 주의 사항"
       />
       <FormFooter onSave={save} />
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// EditMedicationForm
+// ---------------------------------------------------------------------------
+
+function EditMedicationForm({
+  actions,
+  onDone,
+  medication,
+}: {
+  actions: PsycheDataActions;
+  onDone: () => void;
+  medication: Medication;
+}) {
+  const [name, setName] = useState(medication.name);
+  const [dose, setDose] = useState(medication.dose);
+  const [frequency, setFrequency] = useState(medication.frequency);
+  const [schedule, setSchedule] = useState<MealSchedule[]>((medication.schedule ?? []) as MealSchedule[]);
+  const [purpose, setPurpose] = useState(medication.purpose ?? "");
+  const [memo, setMemo] = useState(medication.memo ?? "");
+  const [status, setStatus] = useState(medication.status);
+
+  const save = () => {
+    actions.updateMedication(medication.id, {
+      name: name.trim() || medication.name,
+      dose: dose.trim() || medication.dose,
+      frequency: frequency.trim() || medication.frequency,
+      schedule,
+      purpose: purpose.trim(),
+      memo: memo.trim(),
+      status,
+      endDate: status === "archived" ? (medication.endDate ?? todayISO()) : undefined,
+    });
+    onDone();
+  };
+
+  return (
+    <View style={styles.formStack}>
+      <TextField label="약 이름" value={name} onChangeText={setName} />
+      <TextField label="용량" value={dose} onChangeText={setDose} placeholder="예: 10mg" />
+      <FrequencyChips value={frequency} onChange={setFrequency} />
+      <ScheduleChips value={schedule} onChange={setSchedule} />
+      <TextField label="복용 목적" value={purpose} onChangeText={setPurpose} placeholder="예: 불안 증상 완화" />
+      <TextField label="메모" value={memo} onChangeText={setMemo} multiline placeholder="복용 시간, 주의 사항" />
+      <View style={styles.statusToggleRow}>
+        <Text style={styles.formLabel}>복용 상태</Text>
+        <View style={styles.statusToggleBtns}>
+          {(["active", "archived"] as const).map((s) => (
+            <Pressable
+              key={s}
+              style={[styles.statusToggleBtn, status === s && styles.statusToggleBtnActive]}
+              onPress={() => setStatus(s)}
+            >
+              <Text style={[styles.statusToggleBtnText, status === s && styles.statusToggleBtnTextActive]}>
+                {s === "active" ? "복용 중" : "중단"}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+      <FormFooter onSave={save} saveLabel="수정 완료" />
     </View>
   );
 }
@@ -913,7 +1036,7 @@ export function EntryModal({
   kind: ModalKind;
   actions: PsycheDataActions;
   onClose: () => void;
-  modalContext?: { medicationName?: string; dose?: string };
+  modalContext?: { medicationName?: string; dose?: string; medication?: Medication };
 }) {
   const title = {
     visit: "병원 방문 기록",
@@ -923,6 +1046,7 @@ export function EntryModal({
     medication: "약 등록",
     effect: "체감 효과 기록",
     medicationLog: "복약 기록",
+    editMedication: "약 정보 수정",
   }[kind ?? "symptom"];
 
   return (
@@ -972,6 +1096,13 @@ export function EntryModal({
                   onClose={onClose}
                   initialMedicationName={modalContext?.medicationName}
                   initialDose={modalContext?.dose}
+                />
+              ) : null}
+              {kind === "editMedication" && modalContext?.medication ? (
+                <EditMedicationForm
+                  actions={actions}
+                  onDone={onClose}
+                  medication={modalContext.medication}
                 />
               ) : null}
             </ScrollView>
@@ -1053,5 +1184,65 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "900",
     marginBottom: 7,
+  },
+  freqInput: {
+    backgroundColor: "#F0F2F6",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    fontSize: 14,
+    color: "#20212B",
+    fontWeight: "600",
+  },
+  freqChipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  freqChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 20,
+    backgroundColor: "#F2F2F4",
+    borderWidth: 1.5,
+    borderColor: "transparent",
+  },
+  freqChipActive: {
+    backgroundColor: "#EBE8FD",
+    borderColor: "#4025E8",
+  },
+  freqChipText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#888",
+  },
+  freqChipTextActive: {
+    color: "#4025E8",
+    fontWeight: "700",
+  },
+  statusToggleRow: {
+    gap: 8,
+  },
+  statusToggleBtns: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  statusToggleBtn: {
+    flex: 1,
+    paddingVertical: 11,
+    borderRadius: 12,
+    backgroundColor: "#F2F2F4",
+    alignItems: "center",
+  },
+  statusToggleBtnActive: {
+    backgroundColor: "#4025E8",
+  },
+  statusToggleBtnText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#999",
+  },
+  statusToggleBtnTextActive: {
+    color: "#fff",
   },
 });

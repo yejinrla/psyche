@@ -285,11 +285,11 @@ export function VisitTextField({
   );
 }
 
-export function FormFooter({ onSave }: { onSave: () => void }) {
+export function FormFooter({ onSave, saveLabel }: { onSave: () => void; saveLabel?: string }) {
   return (
     <Pressable style={styles.saveButton} onPress={onSave}>
       <Save color={theme.surface} size={18} strokeWidth={2.4} />
-      <Text style={styles.saveButtonText}>저장</Text>
+      <Text style={styles.saveButtonText}>{saveLabel ?? "저장"}</Text>
     </Pressable>
   );
 }
@@ -731,21 +731,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 13,
   },
   tlFlatRowBorder: {
     borderBottomWidth: 1,
     borderBottomColor: "#F2F2F5",
   },
   tlFlatIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
   },
   tlFlatIconEmoji: {
-    fontSize: 18,
+    fontSize: 14,
   },
   tlFlatIconDot: {
     width: 16,

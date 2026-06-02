@@ -6,7 +6,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { Activity, Bell, ChevronLeft, ChevronRight, Hospital } from "lucide-react-native";
+import { Activity, ChevronLeft, ChevronRight, Hospital } from "lucide-react-native";
 import {
   RatingBadge,
   SegmentedControl,
@@ -44,7 +44,7 @@ function VisitDetailScreen({
 }) {
   const d = new Date(visit.date);
   const DOW = ["일", "월", "화", "수", "목", "금", "토"][d.getDay()];
-  const dateStr = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")} (${DOW})`;
+  const dateStr = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")} (${DOW})${visit.time ? `  ${visit.time}` : ''}`;
 
   const nextD = visit.nextAppointment ? new Date(visit.nextAppointment.date) : null;
   const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
@@ -173,17 +173,13 @@ export function RecordsScreen({
   data: PsycheData;
   openModal: (kind: Exclude<ModalKind, null>) => void;
 }) {
-  const [segment, setSegment] = useState<"visits" | "symptomSideEffects">(
+  const [segment, setSegment] = useState<"visits" | "symptoms" | "sideEffects">(
     "visits",
   );
   const [selectedVisit, setSelectedVisit] = useState<{ visit: Visit; index: number } | null>(null);
   const visits = sortByDateDesc(data.visits);
   const symptoms = sortByDateDesc(data.symptomLogs);
   const sideEffects = sortByDateDesc(data.sideEffectLogs);
-  const symptomSideEffects = [
-    ...symptoms.map((log) => ({ kind: "symptom" as const, log })),
-    ...sideEffects.map((log) => ({ kind: "sideEffect" as const, log })),
-  ].sort((a, b) => b.log.date.localeCompare(a.log.date));
 
   if (selectedVisit) {
     const matchedEvents = (data.medicationEvents ?? []).filter(
@@ -211,8 +207,9 @@ export function RecordsScreen({
       <SegmentedControl
         value={segment}
         options={[
-          { label: "방문", value: "visits" },
-          { label: "증상·부작용", value: "symptomSideEffects" },
+          { label: "진료", value: "visits" },
+          { label: "증상", value: "symptoms" },
+          { label: "부작용", value: "sideEffects" },
         ]}
         onChange={setSegment}
       />
@@ -224,7 +221,7 @@ export function RecordsScreen({
             onPress={() => openModal("visit")}
           >
             <Hospital color={theme.surface} size={19} strokeWidth={2.3} />
-            <Text style={styles.fullWidthActionText}>병원 방문 기록 추가</Text>
+            <Text style={styles.fullWidthActionText}>진료 기록 추가</Text>
           </Pressable>
           {visits.map((visit, i) => (
             <Pressable
@@ -236,7 +233,7 @@ export function RecordsScreen({
                 <View>
                   <Text style={styles.itemTitle}>{visit.hospitalName}</Text>
                   <Text style={styles.itemMeta}>
-                    {formatFullDate(visit.date)}
+                    {formatFullDate(visit.date)}{visit.time ? ` · ${visit.time}` : ''}
                   </Text>
                 </View>
                 <Text style={styles.costText}>
@@ -251,21 +248,12 @@ export function RecordsScreen({
                   </View>
                 ))}
               </View>
-              {visit.nextAppointment ? (
-                <View style={styles.appointmentLine}>
-                  <Bell color={theme.blue} size={16} strokeWidth={2.2} />
-                  <Text style={styles.itemMeta}>
-                    다음 진료 {formatShortDate(visit.nextAppointment.date)}{" "}
-                    {visit.nextAppointment.time}
-                  </Text>
-                </View>
-              ) : null}
             </Pressable>
           ))}
         </View>
       ) : null}
 
-      {segment === "symptomSideEffects" ? (
+      {segment === "symptoms" ? (
         <View style={styles.listStack}>
           <Pressable
             style={styles.fullWidthAction}
@@ -274,39 +262,44 @@ export function RecordsScreen({
             <Activity color={theme.surface} size={19} strokeWidth={2.3} />
             <Text style={styles.fullWidthActionText}>증상 추가</Text>
           </Pressable>
-          {symptomSideEffects.map((item) => (
-            item.kind === "symptom" ? (
-              <View key={`symptom-${item.log.id}`} style={styles.recordPanel}>
-                <View style={styles.rowBetween}>
-                  <View>
-                    <Text style={styles.itemTitle}>{item.log.symptom}</Text>
-                    <Text style={styles.recordTypeText}>증상</Text>
-                  </View>
-                  <RatingBadge rating={item.log.level} />
-                </View>
-                <Text style={styles.itemMeta}>{formatFullDate(item.log.date)}</Text>
-                {item.log.situation ? (
-                  <Text style={styles.recordBody}>상황: {item.log.situation}</Text>
-                ) : null}
-                {item.log.memo ? (
-                  <Text style={styles.recordBody}>{item.log.memo}</Text>
-                ) : null}
+          {sortByDateDesc(data.symptomLogs).map((log) => (
+            <View key={log.id} style={styles.recordPanel}>
+              <View style={styles.rowBetween}>
+                <Text style={styles.itemTitle}>{log.symptom}</Text>
+                <RatingBadge rating={log.level} />
               </View>
-            ) : (
-              <View key={`sideEffect-${item.log.id}`} style={styles.recordPanel}>
-                <View style={styles.rowBetween}>
-                  <View>
-                    <Text style={styles.itemTitle}>{item.log.effects.join(", ")}</Text>
-                    <Text style={styles.recordTypeText}>부작용</Text>
-                  </View>
-                  <RatingBadge rating={item.log.intensity} />
-                </View>
-                <Text style={styles.itemMeta}>{formatFullDate(item.log.date)}</Text>
-                {item.log.memo ? (
-                  <Text style={styles.recordBody}>{item.log.memo}</Text>
-                ) : null}
+              <Text style={styles.itemMeta}>{formatFullDate(log.date)}</Text>
+              {log.situation ? (
+                <Text style={styles.recordBody}>상황: {log.situation}</Text>
+              ) : null}
+              {log.memo ? (
+                <Text style={styles.recordBody}>{log.memo}</Text>
+              ) : null}
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      {segment === "sideEffects" ? (
+        <View style={styles.listStack}>
+          <Pressable
+            style={styles.fullWidthAction}
+            onPress={() => openModal("sideEffect")}
+          >
+            <Activity color={theme.surface} size={19} strokeWidth={2.3} />
+            <Text style={styles.fullWidthActionText}>부작용 추가</Text>
+          </Pressable>
+          {sortByDateDesc(data.sideEffectLogs).map((log) => (
+            <View key={log.id} style={styles.recordPanel}>
+              <View style={styles.rowBetween}>
+                <Text style={styles.itemTitle}>{log.effects.join(", ")}</Text>
+                <RatingBadge rating={log.intensity} />
               </View>
-            )
+              <Text style={styles.itemMeta}>{formatFullDate(log.date)}</Text>
+              {log.memo ? (
+                <Text style={styles.recordBody}>{log.memo}</Text>
+              ) : null}
+            </View>
           ))}
         </View>
       ) : null}

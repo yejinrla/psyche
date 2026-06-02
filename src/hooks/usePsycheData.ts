@@ -137,6 +137,15 @@ export const usePsycheData = () => {
     }));
   }, []);
 
+  const updateMedication = useCallback((id: string, updates: Partial<Omit<Medication, 'id'>>) => {
+    setData((current) => ({
+      ...current,
+      medications: current.medications.map((med) =>
+        med.id === id ? { ...med, ...updates } : med
+      ),
+    }));
+  }, []);
+
   const addMedicationLog = useCallback((log: Omit<MedicationLog, 'id'>) => {
     setData((current) => ({
       ...current,
@@ -161,6 +170,7 @@ export const usePsycheData = () => {
       isReady,
       addVisit,
       addMedication,
+      updateMedication,
       addMedicationEvent,
       addMedicationLog,
       addSymptomLog,
@@ -175,6 +185,7 @@ export const usePsycheData = () => {
       isReady,
       addVisit,
       addMedication,
+      updateMedication,
       addMedicationEvent,
       addMedicationLog,
       addSymptomLog,
