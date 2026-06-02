@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
   Modal,
   Platform,
@@ -10,58 +10,61 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { Bell, ChevronLeft, Clock, Pill, Plus, Trash2 } from "lucide-react-native";
-import type { DailyMedicationInfo } from "../types";
+import { Bell, ChevronLeft, Pill } from "lucide-react-native";
 
 const dayOptions = ["월", "화", "수", "목", "금", "토", "일"] as const;
 const advanceOptions = ["없음", "10분 전", "30분 전", "1시간 전"] as const;
 const methodOptions = ["소리", "진동", "둘 다"] as const;
 
-function defaultReminderTime(schedule: string) {
-  if (schedule.includes("점심")) return "12:30";
-  if (schedule.includes("저녁")) return "19:00";
-  if (schedule.includes("취침")) return "22:30";
-  return "08:00";
-}
+type MealSlot = {
+  key: string;
+  label: string;
+  emoji: string;
+  defaultTime: string;
+};
+
+const MEAL_SLOTS: MealSlot[] = [
+  { key: "morning", label: "아침", emoji: "🌅", defaultTime: "08:00" },
+  { key: "lunch", label: "점심", emoji: "☀️", defaultTime: "12:30" },
+  { key: "dinner", label: "저녁", emoji: "🌆", defaultTime: "19:00" },
+  { key: "bedtime", label: "취침 전", emoji: "🌙", defaultTime: "22:30" },
+];
+
+type SlotState = { enabled: boolean; time: string };
 
 export function MedicationReminderDialog({
-  medication,
+  visible,
   onClose,
 }: {
-  medication: DailyMedicationInfo | null;
+  visible: boolean;
   onClose: () => void;
 }) {
   return (
     <Modal
-      visible={medication !== null}
-      animationType="fade"
-      transparent
+      visible={visible}
+      animationType="slide"
+      transparent={false}
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
         <View style={styles.root}>
-          {medication ? (
-            <MedicationReminderScreen medication={medication} onClose={onClose} />
-          ) : null}
+          <MedicationReminderScreen onClose={onClose} />
         </View>
       </View>
     </Modal>
   );
 }
 
-function MedicationReminderScreen({
-  medication,
-  onClose,
-}: {
-  medication: DailyMedicationInfo;
-  onClose: () => void;
-}) {
-  const initialTime = useMemo(
-    () => defaultReminderTime(medication.schedule),
-    [medication.schedule],
+function MedicationReminderScreen({ onClose }: { onClose: () => void }) {
+  const [masterEnabled, setMasterEnabled] = useState(true);
+  const [slots, setSlots] = useState<Record<string, SlotState>>(() =>
+    Object.fromEntries(
+      MEAL_SLOTS.map((slot) => [
+        slot.key,
+        { enabled: slot.key === "morning", time: slot.defaultTime },
+      ]),
+    ),
   );
-  const [enabled, setEnabled] = useState(true);
-  const [times, setTimes] = useState([initialTime]);
   const [selectedDays, setSelectedDays] = useState<string[]>([...dayOptions]);
   const [advance, setAdvance] = useState<(typeof advanceOptions)[number]>("10분 전");
   const [method, setMethod] = useState<(typeof methodOptions)[number]>("둘 다");
@@ -74,19 +77,28 @@ function MedicationReminderScreen({
     );
   };
 
-  const updateTime = (index: number, value: string) => {
-    setTimes((current) =>
-      current.map((item, itemIndex) => (itemIndex === index ? value : item)),
-    );
+  const toggleSlot = (key: string) => {
+    setSlots((current) => ({
+      ...current,
+      [key]: { ...current[key], enabled: !current[key].enabled },
+    }));
   };
 
-  const addTime = () => {
-    setTimes((current) => [...current, initialTime]);
+  const updateSlotTime = (key: string, value: string) => {
+    setSlots((current) => ({
+      ...current,
+      [key]: { ...current[key], time: value },
+    }));
   };
 
-  const removeTime = (index: number) => {
-    setTimes((current) => current.filter((_, itemIndex) => itemIndex !== index));
-  };
+  const activeSlots = MEAL_SLOTS.filter((slot) => slots[slot.key].enabled);
+  const summaryText = !masterEnabled
+    ? "복약 알림이 꺼져 있습니다."
+    : activeSlots.length === 0
+      ? "켜진 알림 시간대가 없습니다."
+      : `${selectedDays.length}일 반복 · ${activeSlots
+          .map((slot) => `${slot.label} ${slots[slot.key].time}`)
+          .join(", ")}`;
 
   return (
     <View style={styles.page}>
@@ -107,41 +119,52 @@ function MedicationReminderScreen({
             <Bell color="#4025E8" size={28} strokeWidth={2.4} />
           </View>
           <View style={styles.heroText}>
-            <Text style={styles.medName}>{medication.name}</Text>
-            <Text style={styles.medMeta}>
-              {medication.quantity} · {medication.schedule}
-            </Text>
+            <Text style={styles.heroTitle}>복약 알림</Text>
+            <Text style={styles.heroMeta}>시간대별로 약 먹을 시간을 알려드려요</Text>
           </View>
           <Switch
-            value={enabled}
-            onValueChange={setEnabled}
+            value={masterEnabled}
+            onValueChange={setMasterEnabled}
             trackColor={{ false: "#D6D5DF", true: "#C9C2FF" }}
-            thumbColor={enabled ? "#4025E8" : "#FFFFFF"}
+            thumbColor={masterEnabled ? "#4025E8" : "#FFFFFF"}
           />
         </View>
 
-        <Text style={styles.sectionTitle}>알림 시간</Text>
+        <Text style={styles.sectionTitle}>알림 시간대</Text>
         <View style={styles.panel}>
-          {times.map((time, index) => (
-            <View key={`${time}-${index}`} style={styles.timeRow}>
-              <Clock color="#9092A0" size={18} strokeWidth={2.3} />
-              <TextInput
-                value={time}
-                onChangeText={(value) => updateTime(index, value)}
-                style={styles.timeInput}
-                keyboardType="numbers-and-punctuation"
-              />
-              {times.length > 1 ? (
-                <Pressable style={styles.iconAction} onPress={() => removeTime(index)}>
-                  <Trash2 color="#9A9AA7" size={17} strokeWidth={2.2} />
-                </Pressable>
-              ) : null}
-            </View>
-          ))}
-          <Pressable style={styles.addTimeButton} onPress={addTime}>
-            <Plus color="#4025E8" size={17} strokeWidth={2.6} />
-            <Text style={styles.addTimeText}>시간 추가</Text>
-          </Pressable>
+          {MEAL_SLOTS.map((slot, index) => {
+            const state = slots[slot.key];
+            const disabled = !masterEnabled;
+            return (
+              <View
+                key={slot.key}
+                style={[
+                  styles.slotRow,
+                  index === MEAL_SLOTS.length - 1 && styles.slotRowLast,
+                  disabled && styles.slotRowDisabled,
+                ]}
+              >
+                <Text style={styles.slotEmoji}>{slot.emoji}</Text>
+                <Text style={styles.slotLabel}>{slot.label}</Text>
+                <TextInput
+                  value={state.time}
+                  onChangeText={(value) => updateSlotTime(slot.key, value)}
+                  style={[styles.slotTimeInput, !state.enabled && styles.slotTimeMuted]}
+                  keyboardType="numbers-and-punctuation"
+                  editable={!disabled && state.enabled}
+                  placeholder="00:00"
+                  placeholderTextColor="#C0C4CC"
+                />
+                <Switch
+                  value={state.enabled}
+                  onValueChange={() => toggleSlot(slot.key)}
+                  disabled={disabled}
+                  trackColor={{ false: "#E1E0EA", true: "#C9C2FF" }}
+                  thumbColor={state.enabled ? "#4025E8" : "#FFFFFF"}
+                />
+              </View>
+            );
+          })}
         </View>
 
         <Text style={styles.sectionTitle}>반복 요일</Text>
@@ -200,11 +223,7 @@ function MedicationReminderScreen({
 
         <View style={styles.summaryCard}>
           <Pill color="#4025E8" size={18} strokeWidth={2.3} />
-          <Text style={styles.summaryText}>
-            {enabled
-              ? `${selectedDays.length}일 반복 · ${times.join(", ")} 알림`
-              : "복약 알림이 꺼져 있습니다."}
-          </Text>
+          <Text style={styles.summaryText}>{summaryText}</Text>
         </View>
       </ScrollView>
     </View>
@@ -277,12 +296,12 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 4,
   },
-  medName: {
+  heroTitle: {
     color: "#20212B",
     fontSize: 18,
     fontWeight: "800",
   },
-  medMeta: {
+  heroMeta: {
     color: "#6B5FD0",
     fontSize: 13,
     fontWeight: "600",
@@ -296,41 +315,43 @@ const styles = StyleSheet.create({
   panel: {
     borderRadius: 18,
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingHorizontal: 16,
     marginBottom: 20,
   },
-  timeRow: {
-    minHeight: 46,
+  slotRow: {
+    minHeight: 58,
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F2F2F5",
   },
-  timeInput: {
+  slotRowLast: {
+    borderBottomWidth: 0,
+  },
+  slotRowDisabled: {
+    opacity: 0.5,
+  },
+  slotEmoji: {
+    fontSize: 20,
+  },
+  slotLabel: {
+    width: 52,
+    color: "#20212B",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  slotTimeInput: {
     flex: 1,
     color: "#20212B",
-    fontSize: 16,
-    fontWeight: "700",
-    paddingVertical: 8,
-  },
-  iconAction: {
-    width: 32,
-    height: 32,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  addTimeButton: {
-    minHeight: 40,
-    borderTopWidth: 1,
-    borderTopColor: "#ECEBF3",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  addTimeText: {
-    color: "#4025E8",
-    fontSize: 13,
+    fontSize: 17,
     fontWeight: "800",
+    textAlign: "right",
+    paddingVertical: 8,
+    paddingRight: 4,
+  },
+  slotTimeMuted: {
+    color: "#C0C4CC",
   },
   dayRow: {
     flexDirection: "row",
@@ -389,6 +410,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     paddingHorizontal: 14,
+    paddingVertical: 12,
   },
   summaryText: {
     flex: 1,

@@ -32,7 +32,7 @@ import {
   treatmentStartDate,
 } from "../utils/analytics";
 import { formatShortDate, sortByDateAsc } from "../utils/date";
-import type { DailyMedicationInfo, ModalKind, PsycheData } from "../types";
+import type { ModalKind, PsycheData } from "../types";
 import type { PsycheDataActions } from "../hooks/usePsycheData";
 
 type IconComponent = React.ComponentType<{
@@ -117,7 +117,7 @@ export function ReportScreen({
   openModal: (kind: Exclude<ModalKind, null>) => void;
   resetDemoData: () => void;
   toggleQuestion: PsycheDataActions["toggleQuestion"];
-  onOpenMedicationReminder: (medication: DailyMedicationInfo) => void;
+  onOpenMedicationReminder: () => void;
 }) {
   const summary = generateVisitPrepSummary(data);
   const symptoms = sortByDateAsc(data.symptomLogs).slice(-7);
@@ -128,23 +128,6 @@ export function ReportScreen({
   const startDate = treatmentStartDate(data);
   const days = treatmentDays(data);
   const symptomAvg = recentSymptomAverage(data);
-  const reminderMedication = activeMeds[0]
-    ? {
-        name: activeMeds[0].name,
-        englishName: "",
-        brandName: "",
-        ingredient: activeMeds[0].purpose ?? "성분 정보 미입력",
-        category: "복약 알림",
-        dose: activeMeds[0].dose,
-        quantity: activeMeds[0].frequency,
-        schedule: activeMeds[0].frequency,
-        purpose: activeMeds[0].purpose ?? "현재 복용 중인 약",
-        description: activeMeds[0].memo ?? "",
-        sideEffects: [],
-        caution: "",
-        isActive: true,
-      }
-    : null;
 
   return (
     <ScrollView
@@ -311,27 +294,14 @@ export function ReportScreen({
       </View>
 
       <Text style={styles.sectionTitle}>설정</Text>
-      <Pressable
-        style={[
-          styles.settingRow,
-          !reminderMedication && styles.settingRowDisabled,
-        ]}
-        onPress={() => {
-          if (reminderMedication) {
-            onOpenMedicationReminder(reminderMedication);
-          }
-        }}
-        disabled={!reminderMedication}
-      >
+      <Pressable style={styles.settingRow} onPress={onOpenMedicationReminder}>
         <View style={styles.settingIconBox}>
           <Bell color="#4025E8" size={18} strokeWidth={2.4} />
         </View>
         <View style={styles.flex1}>
           <Text style={styles.settingTitle}>복약 알림 설정</Text>
           <Text style={styles.settingMeta}>
-            {reminderMedication
-              ? `${reminderMedication.name} · ${reminderMedication.schedule}`
-              : "현재 복용 중인 약이 없습니다"}
+            아침 · 점심 · 저녁 · 취침 전 시간대별 알림
           </Text>
         </View>
         <ChevronRight color="#A2A4AF" size={19} strokeWidth={2.4} />

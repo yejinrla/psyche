@@ -25,8 +25,7 @@ export default function App() {
   const [modalContext, setModalContext] = useState<{ medicationName?: string; dose?: string; medication?: Medication } | undefined>();
   const [medicationInfo, setMedicationInfo] =
     useState<DailyMedicationInfo | null>(null);
-  const [reminderMedication, setReminderMedication] =
-    useState<DailyMedicationInfo | null>(null);
+  const [reminderVisible, setReminderVisible] = useState(false);
 
   const timeline = useMemo(() => buildTimeline(actions.data), [actions.data]);
 
@@ -70,7 +69,7 @@ export default function App() {
             openModal={openModal}
             resetDemoData={actions.resetDemoData}
             toggleQuestion={actions.toggleQuestion}
-            onOpenMedicationReminder={setReminderMedication}
+            onOpenMedicationReminder={() => setReminderVisible(true)}
           />
         );
       default:
@@ -101,8 +100,8 @@ export default function App() {
         }}
       />
       <MedicationReminderDialog
-        medication={reminderMedication}
-        onClose={() => setReminderMedication(null)}
+        visible={reminderVisible}
+        onClose={() => setReminderVisible(false)}
       />
     </SafeAreaView>
   );
