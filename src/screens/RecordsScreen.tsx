@@ -169,9 +169,13 @@ function VisitDetailScreen({
 export function RecordsScreen({
   data,
   openModal,
+  onGoHome,
+  onOpenNotifications,
 }: {
   data: PsycheData;
   openModal: (kind: Exclude<ModalKind, null>) => void;
+  onGoHome?: () => void;
+  onOpenNotifications?: () => void;
 }) {
   const [segment, setSegment] = useState<"visits" | "symptoms" | "sideEffects">(
     "visits",
@@ -201,7 +205,11 @@ export function RecordsScreen({
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.recordsHeader}>
-        <ScreenTopHeader title="기록" />
+        <ScreenTopHeader
+          title="기록"
+          onPressBrand={onGoHome}
+          onPressNotification={onOpenNotifications}
+        />
       </View>
 
       <SegmentedControl

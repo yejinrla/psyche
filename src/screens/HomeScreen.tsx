@@ -445,10 +445,12 @@ export function HomeScreen({
   data,
   openModal,
   onOpenMedicationInfo,
+  onOpenNotifications,
 }: {
   data: PsycheData;
   openModal: (kind: Exclude<ModalKind, null>) => void;
   onOpenMedicationInfo: (medication: DailyMedicationInfo) => void;
+  onOpenNotifications?: () => void;
 }) {
   const appointmentVisit = useMemo(() => {
     const today = todayISOUtil();
@@ -486,7 +488,10 @@ export function HomeScreen({
             <ButterflyIcon color="#4025E8" />
           </View>
           <View style={styles.headerBrandSpacer} />
-          <Pressable style={styles.notificationButton}>
+          <Pressable
+            style={styles.notificationButton}
+            onPress={onOpenNotifications}
+          >
             <Bell color="#20212B" size={20} strokeWidth={2.6} />
           </Pressable>
         </View>

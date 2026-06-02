@@ -17,6 +17,7 @@ import { ReportScreen } from "./src/screens/ReportScreen";
 import { EntryModal } from "./src/screens/EntryModal";
 import { MedicationInfoDialog } from "./src/screens/MedicationInfoScreen";
 import { MedicationReminderDialog } from "./src/screens/MedicationReminderScreen";
+import { NotificationDialog } from "./src/screens/NotificationScreen";
 
 export default function App() {
   const actions = usePsycheData();
@@ -26,6 +27,10 @@ export default function App() {
   const [medicationInfo, setMedicationInfo] =
     useState<DailyMedicationInfo | null>(null);
   const [reminderVisible, setReminderVisible] = useState(false);
+  const [notificationsVisible, setNotificationsVisible] = useState(false);
+
+  const goHome = () => setActiveTab("home");
+  const openNotifications = () => setNotificationsVisible(true);
 
   const timeline = useMemo(() => buildTimeline(actions.data), [actions.data]);
 
@@ -39,10 +44,18 @@ export default function App() {
             data={actions.data}
             openModal={openModal}
             onOpenMedicationInfo={setMedicationInfo}
+            onOpenNotifications={openNotifications}
           />
         );
       case "records":
-        return <RecordsScreen data={actions.data} openModal={openModal} />;
+        return (
+          <RecordsScreen
+            data={actions.data}
+            openModal={openModal}
+            onGoHome={goHome}
+            onOpenNotifications={openNotifications}
+          />
+        );
       case "medications":
         return (
           <MedicationScreen
@@ -58,6 +71,8 @@ export default function App() {
             }}
             onDeleteEvent={(id) => actions.deleteMedicationEvent(id)}
             onUpdateEvent={(id, updates) => actions.updateMedicationEvent(id, updates)}
+            onGoHome={goHome}
+            onOpenNotifications={openNotifications}
           />
         );
       case "timeline":
@@ -70,6 +85,8 @@ export default function App() {
             resetDemoData={actions.resetDemoData}
             toggleQuestion={actions.toggleQuestion}
             onOpenMedicationReminder={() => setReminderVisible(true)}
+            onGoHome={goHome}
+            onOpenNotifications={openNotifications}
           />
         );
       default:
@@ -102,6 +119,11 @@ export default function App() {
       <MedicationReminderDialog
         visible={reminderVisible}
         onClose={() => setReminderVisible(false)}
+      />
+      <NotificationDialog
+        visible={notificationsVisible}
+        data={actions.data}
+        onClose={() => setNotificationsVisible(false)}
       />
     </SafeAreaView>
   );

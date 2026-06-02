@@ -3,15 +3,23 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Bell } from "lucide-react-native";
 import { ButterflyIcon } from "./ButterflyIcon";
 
-export function ScreenTopHeader({ title }: { title: string }) {
+export function ScreenTopHeader({
+  title,
+  onPressBrand,
+  onPressNotification,
+}: {
+  title: string;
+  onPressBrand?: () => void;
+  onPressNotification?: () => void;
+}) {
   return (
     <View>
       <View style={styles.topRow}>
-        <View style={styles.brand}>
+        <Pressable style={styles.brand} onPress={onPressBrand} hitSlop={8}>
           <ButterflyIcon color="#4025E8" />
-        </View>
+        </Pressable>
         <View style={styles.spacer} />
-        <Pressable style={styles.notificationButton}>
+        <Pressable style={styles.notificationButton} onPress={onPressNotification}>
           <Bell color="#20212B" size={20} strokeWidth={2.6} />
         </Pressable>
       </View>

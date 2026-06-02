@@ -45,6 +45,8 @@ export function MedicationScreen({
   onLogMedication,
   onDeleteEvent,
   onUpdateEvent,
+  onGoHome,
+  onOpenNotifications,
 }: {
   data: PsycheData;
   openModal: (kind: Exclude<ModalKind, null>) => void;
@@ -52,6 +54,8 @@ export function MedicationScreen({
   onLogMedication?: (medication: DailyMedicationInfo) => void;
   onDeleteEvent?: (id: string) => void;
   onUpdateEvent?: (id: string, updates: Partial<Omit<MedicationEvent, 'id'>>) => void;
+  onGoHome?: () => void;
+  onOpenNotifications?: () => void;
 }) {
   const activeMeds = activeMedications(data.medications);
   const archivedMeds = data.medications.filter((m) => m.status === "archived");
@@ -68,7 +72,11 @@ export function MedicationScreen({
         contentContainerStyle={styles.screenContent}
         showsVerticalScrollIndicator={false}
       >
-        <ScreenTopHeader title="약물" />
+        <ScreenTopHeader
+          title="약물"
+          onPressBrand={onGoHome}
+          onPressNotification={onOpenNotifications}
+        />
         <SectionHeader
           title="약물 관리"
           actionLabel="약 추가"

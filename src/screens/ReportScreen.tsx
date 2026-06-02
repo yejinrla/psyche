@@ -112,12 +112,16 @@ export function ReportScreen({
   resetDemoData,
   toggleQuestion,
   onOpenMedicationReminder,
+  onGoHome,
+  onOpenNotifications,
 }: {
   data: PsycheData;
   openModal: (kind: Exclude<ModalKind, null>) => void;
   resetDemoData: () => void;
   toggleQuestion: PsycheDataActions["toggleQuestion"];
   onOpenMedicationReminder: () => void;
+  onGoHome?: () => void;
+  onOpenNotifications?: () => void;
 }) {
   const summary = generateVisitPrepSummary(data);
   const symptoms = sortByDateAsc(data.symptomLogs).slice(-7);
@@ -134,7 +138,11 @@ export function ReportScreen({
       contentContainerStyle={styles.screenContent}
       showsVerticalScrollIndicator={false}
     >
-      <ScreenTopHeader title="마이" />
+      <ScreenTopHeader
+        title="마이"
+        onPressBrand={onGoHome}
+        onPressNotification={onOpenNotifications}
+      />
 
       {/* 프로필 히어로 */}
       <View style={styles.heroCard}>
