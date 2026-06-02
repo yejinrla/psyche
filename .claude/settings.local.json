@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git pull *)",
+      "Bash(netstat -ano)",
+      "Bash(findstr :8081)",
+      "Bash(taskkill /PID 32760 /F)",
+      "Bash(taskkill /PID 12008 /F)",
+      "PowerShell(Stop-Process -Id 32760 -Force)",
+      "PowerShell(Stop-Process -Id 12008 -Force)"
+    ]
+  }
+}

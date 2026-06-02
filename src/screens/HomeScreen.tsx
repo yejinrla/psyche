@@ -309,18 +309,9 @@ function TimeOfDayCard({
     { name: "자나팜정 0.25mg", qty: 0.5 },
   ];
   const [checked, setChecked] = useState<Record<string, boolean>>({});
-  const allSelected = medications.every(({ name }) => checked[name]);
 
   const toggle = (med: string) =>
     setChecked((prev) => ({ ...prev, [med]: !prev[med] }));
-  const toggleAll = () =>
-    setChecked((prev) => {
-      const next = { ...prev };
-      medications.forEach(({ name }) => {
-        next[name] = !allSelected;
-      });
-      return next;
-    });
 
   return (
     <View style={styles.timeOfDayCard}>
@@ -336,21 +327,6 @@ function TimeOfDayCard({
             </Text>
           </Pressable>
         ))}
-      </View>
-      <View style={styles.timeOfDayBulkRow}>
-        <Pressable
-          style={[styles.timeOfDayBulkButton, allSelected && styles.timeOfDayBulkButtonActive]}
-          onPress={toggleAll}
-        >
-          <Text
-            style={[
-              styles.timeOfDayBulkText,
-              allSelected && styles.timeOfDayBulkTextActive,
-            ]}
-          >
-            {allSelected ? "선택 해제" : "전체 선택"}
-          </Text>
-        </Pressable>
       </View>
       <View style={styles.timeOfDayMedList}>
         {medications.map(({ name, qty }, i) => {
@@ -990,30 +966,6 @@ const styles = StyleSheet.create({
   timeOfDayLabelActive: {
     color: "#4025E8",
     fontWeight: "800",
-  },
-  timeOfDayBulkRow: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    marginTop: 12,
-  },
-  timeOfDayBulkButton: {
-    minHeight: 30,
-    paddingHorizontal: 12,
-    borderRadius: 15,
-    backgroundColor: "#EEEDF8",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  timeOfDayBulkButtonActive: {
-    backgroundColor: "#4025E8",
-  },
-  timeOfDayBulkText: {
-    color: "#4025E8",
-    fontSize: 12,
-    fontWeight: "800",
-  },
-  timeOfDayBulkTextActive: {
-    color: "#FFFFFF",
   },
   timeOfDayMedList: {
     marginTop: 12,

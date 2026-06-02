@@ -11,7 +11,7 @@ import {
   RatingBadge,
   SegmentedControl,
 } from "../components/SharedComponents";
-import { ButterflyIcon } from "../components/ButterflyIcon";
+import { ScreenTopHeader } from "../components/ScreenTopHeader";
 import { theme } from "../constants";
 import { formatFullDate, formatShortDate, sortByDateDesc } from "../utils/date";
 import type { MedicationEvent, ModalKind, PsycheData, Visit } from "../types";
@@ -205,16 +205,7 @@ export function RecordsScreen({
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.recordsHeader}>
-        <View style={styles.recordsTopRow}>
-          <View style={styles.headerBrand}>
-            <ButterflyIcon color="#4025E8" />
-          </View>
-          <View style={styles.headerBrandSpacer} />
-          <Pressable style={styles.notificationButton}>
-            <Bell color="#20212B" size={20} strokeWidth={2.6} />
-          </Pressable>
-        </View>
-        <Text style={styles.recordsTitle}>기록</Text>
+        <ScreenTopHeader title="기록" />
       </View>
 
       <SegmentedControl
@@ -332,44 +323,6 @@ const styles = StyleSheet.create({
   },
   recordsHeader: {
     paddingHorizontal: 10,
-  },
-  recordsTopRow: {
-    minHeight: 38,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 10,
-  },
-  headerBrand: {
-    width: 36,
-    minHeight: 40,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  headerBrandSpacer: {
-    flex: 1,
-  },
-  notificationButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#20212B",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  recordsTitle: {
-    color: "#20212B",
-    fontSize: 28,
-    fontWeight: "900",
-    letterSpacing: 0,
-    textAlign: "left",
-    marginTop: 2,
   },
   listStack: {
     gap: 12,

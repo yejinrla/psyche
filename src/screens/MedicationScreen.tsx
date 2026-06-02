@@ -5,6 +5,7 @@ import {
   SectionHeader,
   TimelineEventRow,
 } from "../components/SharedComponents";
+import { ScreenTopHeader } from "../components/ScreenTopHeader";
 import { theme } from "../constants";
 import { activeMedications } from "../utils/analytics";
 import { daysBetween, sortByDateDesc } from "../utils/date";
@@ -41,6 +42,7 @@ export function MedicationScreen({
       contentContainerStyle={styles.screenContent}
       showsVerticalScrollIndicator={false}
     >
+      <ScreenTopHeader title="약물" />
       <SectionHeader
         title="약물 관리"
         actionLabel="약 추가"

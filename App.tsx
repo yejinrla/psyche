@@ -7,7 +7,6 @@ import { usePsycheData } from "./src/hooks/usePsycheData";
 import type { DailyMedicationInfo, ModalKind, TabKey } from "./src/types";
 import { buildTimeline } from "./src/utils/analytics";
 
-import { AppHeader } from "./src/components/AppHeader";
 import { BottomTabBar } from "./src/components/BottomTabBar";
 
 import { HomeScreen } from "./src/screens/HomeScreen";
@@ -17,6 +16,7 @@ import { MedicationScreen } from "./src/screens/MedicationScreen";
 import { ReportScreen } from "./src/screens/ReportScreen";
 import { EntryModal } from "./src/screens/EntryModal";
 import { MedicationInfoDialog } from "./src/screens/MedicationInfoScreen";
+import { MedicationReminderDialog } from "./src/screens/MedicationReminderScreen";
 
 export default function App() {
   const actions = usePsycheData();
@@ -24,6 +24,8 @@ export default function App() {
   const [modalKind, setModalKind] = useState<ModalKind>(null);
   const [modalContext, setModalContext] = useState<{ medicationName?: string; dose?: string } | undefined>();
   const [medicationInfo, setMedicationInfo] =
+    useState<DailyMedicationInfo | null>(null);
+  const [reminderMedication, setReminderMedication] =
     useState<DailyMedicationInfo | null>(null);
 
   const timeline = useMemo(() => buildTimeline(actions.data), [actions.data]);
@@ -53,6 +55,7 @@ export default function App() {
             openModal={openModal}
             resetDemoData={actions.resetDemoData}
             toggleQuestion={actions.toggleQuestion}
+            onOpenMedicationReminder={setReminderMedication}
           />
         );
       default:
@@ -64,9 +67,6 @@ export default function App() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
       <View style={styles.appShell}>
-        {activeTab !== "home" && activeTab !== "timeline" && activeTab !== "records" ? (
-          <AppHeader openModal={openModal} />
-        ) : null}
         <View style={styles.screen}>{renderScreen()}</View>
         <BottomTabBar activeTab={activeTab} onChange={setActiveTab} />
       </View>
@@ -84,6 +84,10 @@ export default function App() {
           setModalContext({ medicationName: med.name, dose: med.dose });
           setModalKind("medicationLog");
         }}
+      />
+      <MedicationReminderDialog
+        medication={reminderMedication}
+        onClose={() => setReminderMedication(null)}
       />
     </SafeAreaView>
   );

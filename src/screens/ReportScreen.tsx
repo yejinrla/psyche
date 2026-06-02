@@ -8,8 +8,10 @@ import {
   View,
 } from "react-native";
 import {
+  Bell,
   CalendarDays,
   CheckCircle2,
+  ChevronRight,
   Hospital,
   Pill,
   RotateCcw,
@@ -21,6 +23,7 @@ import {
   MiniBarChart,
   SectionHeader,
 } from "../components/SharedComponents";
+import { ScreenTopHeader } from "../components/ScreenTopHeader";
 import { theme } from "../constants";
 import {
   activeMedications,
@@ -33,7 +36,7 @@ import {
   treatmentStartDate,
 } from "../utils/analytics";
 import { formatShortDate, sortByDateAsc } from "../utils/date";
-import type { ModalKind, PsycheData } from "../types";
+import type { DailyMedicationInfo, ModalKind, PsycheData } from "../types";
 import type { PsycheDataActions } from "../hooks/usePsycheData";
 
 const shadow = Platform.select({
@@ -54,11 +57,13 @@ export function ReportScreen({
   openModal,
   resetDemoData,
   toggleQuestion,
+  onOpenMedicationReminder,
 }: {
   data: PsycheData;
   openModal: (kind: Exclude<ModalKind, null>) => void;
   resetDemoData: () => void;
   toggleQuestion: PsycheDataActions["toggleQuestion"];
+  onOpenMedicationReminder: (medication: DailyMedicationInfo) => void;
 }) {
   const summary = generateVisitPrepSummary(data);
   const symptoms = sortByDateAsc(data.symptomLogs).slice(-7);
@@ -67,12 +72,30 @@ export function ReportScreen({
   const symptomCounts = symptomFrequency(data, 30);
   const activeMeds = activeMedications(data.medications);
   const startDate = treatmentStartDate(data);
+  const reminderMedication = activeMeds[0]
+    ? {
+        name: activeMeds[0].name,
+        englishName: "",
+        brandName: "",
+        ingredient: activeMeds[0].purpose ?? "성분 정보 미입력",
+        category: "복약 알림",
+        dose: activeMeds[0].dose,
+        quantity: activeMeds[0].frequency,
+        schedule: activeMeds[0].frequency,
+        purpose: activeMeds[0].purpose ?? "현재 복용 중인 약",
+        description: activeMeds[0].memo ?? "",
+        sideEffects: [],
+        caution: "",
+        isActive: true,
+      }
+    : null;
 
   return (
     <ScrollView
       contentContainerStyle={styles.screenContent}
       showsVerticalScrollIndicator={false}
     >
+      <ScreenTopHeader title="마이" />
       <SectionHeader
         title="치료 리포트"
         actionLabel="효과 기록"
@@ -207,6 +230,33 @@ export function ReportScreen({
         ))}
       </View>
 
+      <SectionHeader title="설정" />
+      <Pressable
+        style={[
+          styles.settingRow,
+          !reminderMedication && styles.settingRowDisabled,
+        ]}
+        onPress={() => {
+          if (reminderMedication) {
+            onOpenMedicationReminder(reminderMedication);
+          }
+        }}
+        disabled={!reminderMedication}
+      >
+        <View style={styles.settingIconBox}>
+          <Bell color="#4025E8" size={18} strokeWidth={2.4} />
+        </View>
+        <View style={styles.flex1}>
+          <Text style={styles.settingTitle}>복약 알림 설정</Text>
+          <Text style={styles.settingMeta}>
+            {reminderMedication
+              ? `${reminderMedication.name} · ${reminderMedication.schedule}`
+              : "현재 복용 중인 약이 없습니다"}
+          </Text>
+        </View>
+        <ChevronRight color="#A2A4AF" size={19} strokeWidth={2.4} />
+      </Pressable>
+
       <Pressable style={styles.resetButton} onPress={resetDemoData}>
         <RotateCcw color={theme.teal} size={18} strokeWidth={2.4} />
         <Text style={styles.resetText}>샘플 데이터로 되돌리기</Text>
@@ -294,6 +344,39 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
     marginTop: 4,
+    fontWeight: "600",
+  },
+  settingRow: {
+    minHeight: 68,
+    borderRadius: 8,
+    backgroundColor: theme.surface,
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    ...shadow,
+  },
+  settingRowDisabled: {
+    opacity: 0.55,
+  },
+  settingIconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: theme.tealSoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  settingTitle: {
+    color: theme.text,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  settingMeta: {
+    color: theme.muted,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 3,
     fontWeight: "600",
   },
   resetButton: {

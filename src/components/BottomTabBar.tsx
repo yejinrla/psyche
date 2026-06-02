@@ -1,9 +1,9 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import {
+  CircleUserRound,
   GitBranch,
   Home,
-  MoreHorizontal,
   Pill,
   Plus,
 } from "lucide-react-native";
@@ -21,7 +21,7 @@ const tabs: { key: TabKey; label: string; icon: IconComponent }[] = [
   { key: "timeline", label: "타임라인", icon: GitBranch },
   { key: "records", label: "기록", icon: Plus },
   { key: "medications", label: "약물", icon: Pill },
-  { key: "report", label: "더보기", icon: MoreHorizontal },
+  { key: "report", label: "마이", icon: CircleUserRound },
 ];
 
 export function BottomTabBar({
