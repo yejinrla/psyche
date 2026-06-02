@@ -151,7 +151,7 @@ function MedicationReminderScreen({ onClose }: { onClose: () => void }) {
                   onChangeText={(value) => updateSlotTime(slot.key, value)}
                   style={[styles.slotTimeInput, !state.enabled && styles.slotTimeMuted]}
                   keyboardType="numbers-and-punctuation"
-                  editable={!disabled && state.enabled}
+                  editable={!disabled}
                   placeholder="00:00"
                   placeholderTextColor="#C0C4CC"
                 />
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
     paddingRight: 4,
   },
   slotTimeMuted: {
-    color: "#C0C4CC",
+    color: "#9096A2",
   },
   dayRow: {
     flexDirection: "row",
