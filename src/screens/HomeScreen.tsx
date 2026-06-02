@@ -217,7 +217,7 @@ function MoodCard() {
 // SleepCard
 // ---------------------------------------------------------------------------
 
-type TimeOfDay = "아침" | "점심" | "저녁" | "취침전";
+type TimeOfDay = "아침" | "점심" | "저녁" | "취침전" | "수시";
 
 const SLEEP_QUALITY = [
   { emoji: "😣", label: "나쁨" },
@@ -300,14 +300,17 @@ function TimeOfDayCard({
   onOpenMedicationInfo: (medication: DailyMedicationInfo) => void;
 }) {
   const [selected, setSelected] = useState<TimeOfDay>("아침");
-  const options: TimeOfDay[] = ["아침", "점심", "저녁", "취침전"];
+  const options: TimeOfDay[] = ["아침", "점심", "저녁", "취침전", "수시"];
 
-  const medications = [
+  const scheduledMeds = [
     { name: "아리피졸정 1mg", qty: 0.5 },
     { name: "인데놀정 10mg", qty: 1 },
     { name: "메녹틸정 20mg", qty: 1 },
     { name: "자나팜정 0.25mg", qty: 0.5 },
   ];
+  // 수시 탭: 필요 시 복용하는 약만 표시
+  const asNeededMeds = [{ name: "자나팜정 0.25mg", qty: 0.5 }];
+  const medications = selected === "수시" ? asNeededMeds : scheduledMeds;
   const [checked, setChecked] = useState<Record<string, boolean>>({});
 
   const toggle = (med: string) =>
