@@ -57,6 +57,8 @@ export default function App() {
               setModalContext({ medicationName: med.name, dose: med.dose });
               setModalKind("medicationLog");
             }}
+            onDeleteEvent={(id) => actions.deleteMedicationEvent(id)}
+            onUpdateEvent={(id, updates) => actions.updateMedicationEvent(id, updates)}
           />
         );
       case "timeline":

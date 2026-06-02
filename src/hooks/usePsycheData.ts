@@ -160,6 +160,20 @@ export const usePsycheData = () => {
     }));
   }, []);
 
+  const deleteMedicationEvent = useCallback((id: string) => {
+    setData((current) => ({
+      ...current,
+      medicationEvents: current.medicationEvents.filter((e) => e.id !== id),
+    }));
+  }, []);
+
+  const updateMedicationEvent = useCallback((id: string, updates: Partial<Omit<MedicationEvent, 'id'>>) => {
+    setData((current) => ({
+      ...current,
+      medicationEvents: current.medicationEvents.map((e) => e.id === id ? { ...e, ...updates } : e),
+    }));
+  }, []);
+
   const resetDemoData = useCallback(() => {
     setData(seedData);
   }, []);
@@ -172,6 +186,8 @@ export const usePsycheData = () => {
       addMedication,
       updateMedication,
       addMedicationEvent,
+      deleteMedicationEvent,
+      updateMedicationEvent,
       addMedicationLog,
       addSymptomLog,
       addSideEffectLog,
@@ -187,6 +203,8 @@ export const usePsycheData = () => {
       addMedication,
       updateMedication,
       addMedicationEvent,
+      deleteMedicationEvent,
+      updateMedicationEvent,
       addMedicationLog,
       addSymptomLog,
       addSideEffectLog,

@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
+  Modal,
   Platform,
   Pressable,
   StyleSheet,
@@ -305,11 +306,25 @@ const TL_EMOJI: Record<string, string> = {
 export function TimelineEventRow({
   item,
   isLast,
+  onEdit,
+  onDelete,
 }: {
   item: TimelineItem;
   isLast: boolean;
+  onEdit?: () => void;
+  onDelete?: () => void;
 }) {
   const emoji = TL_EMOJI[item.type];
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
+  const btnRef = useRef<View>(null);
+
+  const handleMorePress = () => {
+    btnRef.current?.measure((_fx, _fy, _w, _h, px, py) => {
+      setMenuPos({ x: px, y: py });
+      setMenuVisible(true);
+    });
+  };
 
   return (
     <View style={[styles.tlFlatRow, !isLast && styles.tlFlatRowBorder]}>
@@ -323,7 +338,31 @@ export function TimelineEventRow({
         <Text style={styles.tlFlatTitle}>{item.title}</Text>
         <Text style={styles.tlFlatDesc} numberOfLines={1}>{item.description}</Text>
       </View>
-      <Text style={styles.tlFlatMore}>•••</Text>
+      {(onEdit || onDelete) ? (
+        <Pressable ref={btnRef} onPress={handleMorePress} hitSlop={8} style={styles.tlMoreBtn}>
+          <Text style={styles.tlFlatMore}>•••</Text>
+        </Pressable>
+      ) : (
+        <Text style={styles.tlFlatMore}>•••</Text>
+      )}
+
+      <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={() => setMenuVisible(false)}>
+        <Pressable style={styles.ctxBackdrop} onPress={() => setMenuVisible(false)}>
+          <View style={[styles.ctxMenu, { top: menuPos.y - 8, left: menuPos.x - 110 }]}>
+            {onEdit && (
+              <Pressable style={styles.ctxItem} onPress={() => { setMenuVisible(false); onEdit(); }}>
+                <Text style={styles.ctxItemText}>수정</Text>
+              </Pressable>
+            )}
+            {onEdit && onDelete && <View style={styles.ctxDivider} />}
+            {onDelete && (
+              <Pressable style={styles.ctxItem} onPress={() => { setMenuVisible(false); onDelete(); }}>
+                <Text style={[styles.ctxItemText, styles.ctxItemDelete]}>삭제</Text>
+              </Pressable>
+            )}
+          </View>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -771,6 +810,41 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     letterSpacing: 1,
+  },
+  tlMoreBtn: {
+    padding: 4,
+  },
+  ctxBackdrop: {
+    flex: 1,
+  },
+  ctxMenu: {
+    position: "absolute",
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    minWidth: 120,
+    shadowColor: "#20212B",
+    shadowOpacity: 0.14,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+    overflow: "hidden",
+  },
+  ctxItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+  },
+  ctxItemText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#20212B",
+  },
+  ctxItemDelete: {
+    color: "#E53E3E",
+  },
+  ctxDivider: {
+    height: 1,
+    backgroundColor: "#F2F2F5",
+    marginHorizontal: 12,
   },
   chartPanel: {
     borderRadius: 8,

@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import {
+  Modal,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
-import { Pencil } from "lucide-react-native";
+import { Pencil, X } from "lucide-react-native";
 import {
   InfoPill,
   SectionHeader,
@@ -19,7 +21,7 @@ import { MedicationInfoDialog } from "./MedicationInfoScreen";
 import { theme } from "../constants";
 import { activeMedications } from "../utils/analytics";
 import { daysBetween, sortByDateDesc } from "../utils/date";
-import type { DailyMedicationInfo, Medication, ModalKind, PsycheData } from "../types";
+import type { DailyMedicationInfo, Medication, MedicationEvent, ModalKind, PsycheData } from "../types";
 
 const shadow = Platform.select({
   ios: {
@@ -41,17 +43,24 @@ export function MedicationScreen({
   openModal,
   onEditMedication,
   onLogMedication,
+  onDeleteEvent,
+  onUpdateEvent,
 }: {
   data: PsycheData;
   openModal: (kind: Exclude<ModalKind, null>) => void;
   onEditMedication?: (medication: Medication) => void;
   onLogMedication?: (medication: DailyMedicationInfo) => void;
+  onDeleteEvent?: (id: string) => void;
+  onUpdateEvent?: (id: string, updates: Partial<Omit<MedicationEvent, 'id'>>) => void;
 }) {
   const activeMeds = activeMedications(data.medications);
   const archivedMeds = data.medications.filter((m) => m.status === "archived");
   const events = sortByDateDesc(data.medicationEvents);
   const [selectedMed, setSelectedMed] = useState<Medication | null>(null);
   const selectedMedInfo = selectedMed ? getMedicationInfo(selectedMed) : null;
+  const [editingEvent, setEditingEvent] = useState<MedicationEvent | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDesc, setEditDesc] = useState("");
 
   return (
     <>
@@ -119,6 +128,12 @@ export function MedicationScreen({
                 accent: theme.teal,
               }}
               isLast={index === events.length - 1}
+              onEdit={onUpdateEvent ? () => {
+                setEditTitle(event.title);
+                setEditDesc(event.description);
+                setEditingEvent(event);
+              } : undefined}
+              onDelete={onDeleteEvent ? () => onDeleteEvent(event.id) : undefined}
             />
           ))}
         </View>
@@ -138,6 +153,53 @@ export function MedicationScreen({
           ))}
         </View>
       </ScrollView>
+
+      {/* 이벤트 수정 모달 */}
+      <Modal
+        visible={editingEvent !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditingEvent(null)}
+      >
+        <Pressable style={evtEdit.backdrop} onPress={() => setEditingEvent(null)}>
+          <Pressable style={evtEdit.sheet} onPress={() => {}}>
+            <View style={evtEdit.header}>
+              <Text style={evtEdit.headerTitle}>히스토리 수정</Text>
+              <Pressable onPress={() => setEditingEvent(null)} hitSlop={8}>
+                <X color="#888" size={20} strokeWidth={2.2} />
+              </Pressable>
+            </View>
+            <Text style={evtEdit.label}>제목</Text>
+            <TextInput
+              style={evtEdit.input}
+              value={editTitle}
+              onChangeText={setEditTitle}
+              placeholder="제목"
+              placeholderTextColor="#C0C4CC"
+            />
+            <Text style={evtEdit.label}>설명</Text>
+            <TextInput
+              style={[evtEdit.input, evtEdit.inputMulti]}
+              value={editDesc}
+              onChangeText={setEditDesc}
+              placeholder="설명"
+              placeholderTextColor="#C0C4CC"
+              multiline
+            />
+            <Pressable
+              style={evtEdit.saveBtn}
+              onPress={() => {
+                if (editingEvent) {
+                  onUpdateEvent?.(editingEvent.id, { title: editTitle.trim(), description: editDesc.trim() });
+                  setEditingEvent(null);
+                }
+              }}
+            >
+              <Text style={evtEdit.saveBtnText}>저장</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* 약 상세 모달 */}
       <MedicationInfoDialog
@@ -243,5 +305,66 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 6,
     ...shadow,
+  },
+});
+
+const evtEdit = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: "rgba(16,24,32,0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  sheet: {
+    width: "90%",
+    maxWidth: 360,
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 20,
+    gap: 8,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: "#20212B",
+  },
+  label: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#9096A2",
+    marginTop: 6,
+    marginBottom: 2,
+  },
+  input: {
+    borderWidth: 1.5,
+    borderColor: "#E8E6F0",
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    fontSize: 15,
+    color: "#20212B",
+    backgroundColor: "#FAFAFA",
+  },
+  inputMulti: {
+    minHeight: 72,
+    textAlignVertical: "top",
+  },
+  saveBtn: {
+    backgroundColor: "#4025E8",
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+    marginTop: 8,
+  },
+  saveBtnText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "800",
   },
 });
