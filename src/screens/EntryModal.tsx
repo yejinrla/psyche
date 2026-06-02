@@ -337,22 +337,11 @@ function FrequencyChips({ value, onChange }: { value: string; onChange: (v: stri
   return (
     <View style={{ gap: 10 }}>
       <Text style={styles.formLabel}>복용 횟수</Text>
-      <View style={styles.freqChipRow}>
-        {FREQUENCY_OPTIONS.map((opt) => (
-          <Pressable
-            key={opt}
-            style={[styles.freqChip, value === opt && styles.freqChipActive]}
-            onPress={() => onChange(opt)}
-          >
-            <Text style={[styles.freqChipText, value === opt && styles.freqChipTextActive]}>{opt}</Text>
-          </Pressable>
-        ))}
-      </View>
       <TextInput
         style={styles.freqInput}
         value={value}
         onChangeText={onChange}
-        placeholder="직접 입력"
+        placeholder="예: 하루 1회"
         placeholderTextColor="#C0C4CC"
       />
     </View>
