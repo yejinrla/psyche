@@ -145,7 +145,7 @@ function MedicationReminderScreen({ onClose }: { onClose: () => void }) {
                 ]}
               >
                 <Text style={styles.slotEmoji}>{slot.emoji}</Text>
-                <Text style={styles.slotLabel}>{slot.label}</Text>
+                <Text style={styles.slotLabel} numberOfLines={1}>{slot.label}</Text>
                 <TextInput
                   value={state.time}
                   onChangeText={(value) => updateSlotTime(slot.key, value)}
@@ -336,13 +336,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
   },
   slotLabel: {
-    width: 52,
+    flex: 1,
     color: "#20212B",
     fontSize: 15,
     fontWeight: "700",
   },
   slotTimeInput: {
-    flex: 1,
+    width: 72,
     color: "#20212B",
     fontSize: 17,
     fontWeight: "800",
