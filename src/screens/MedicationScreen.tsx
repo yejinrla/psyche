@@ -141,7 +141,11 @@ export function MedicationScreen({
         <SectionHeader title="과거 복용 약" />
         <View style={styles.listStack}>
           {archivedMeds.map((medication) => (
-            <View key={medication.id} style={styles.archivedRow}>
+            <Pressable
+              key={medication.id}
+              style={styles.archivedRow}
+              onPress={() => setSelectedMed(medication)}
+            >
               <View>
                 <Text style={styles.itemTitle}>{medication.name}</Text>
                 <Text style={styles.itemMeta}>
@@ -149,7 +153,7 @@ export function MedicationScreen({
                 </Text>
               </View>
               <Text style={styles.itemMeta}>{medication.memo}</Text>
-            </View>
+            </Pressable>
           ))}
         </View>
       </ScrollView>
