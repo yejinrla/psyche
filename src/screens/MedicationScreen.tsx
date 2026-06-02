@@ -7,6 +7,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { Pencil } from "lucide-react-native";
 import {
   InfoPill,
   SectionHeader,
@@ -76,8 +77,20 @@ export function MedicationScreen({
                   <Text style={styles.itemTitle}>{medication.name}</Text>
                   <Text style={styles.itemMeta}>{medication.purpose}</Text>
                 </View>
-                <View style={styles.activeBadge}>
-                  <Text style={styles.activeBadgeText}>복용 중</Text>
+                <View style={styles.cardRight}>
+                  <View style={styles.activeBadge}>
+                    <Text style={styles.activeBadgeText}>복용 중</Text>
+                  </View>
+                  <Pressable
+                    style={styles.cardEditBtn}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      onEditMedication?.(medication);
+                    }}
+                    hitSlop={8}
+                  >
+                    <Pencil color="#4025E8" size={14} strokeWidth={2.4} />
+                  </Pressable>
                 </View>
               </View>
               <View style={styles.medDoseRow}>
@@ -180,11 +193,24 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontWeight: "600",
   },
+  cardRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
   activeBadge: {
     minHeight: 28,
     paddingHorizontal: 9,
     borderRadius: 8,
     backgroundColor: theme.greenSoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cardEditBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    backgroundColor: "#EBE8FD",
     alignItems: "center",
     justifyContent: "center",
   },
