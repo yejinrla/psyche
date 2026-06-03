@@ -224,6 +224,8 @@ export const seedData: PsycheData = {
       memo: '수면은 나아졌으나 오후 졸림은 남아 있음',
     },
   ],
+  moodLogs: [],
+  sleepLogs: [],
   medicationLogs: [],
   questions: [
     {

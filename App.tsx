@@ -17,6 +17,7 @@ import { ReportScreen } from "./src/screens/ReportScreen";
 import { EntryModal } from "./src/screens/EntryModal";
 import { MedicationInfoDialog } from "./src/screens/MedicationInfoScreen";
 import { MedicationReminderDialog } from "./src/screens/MedicationReminderScreen";
+import { AppointmentReminderDialog } from "./src/screens/AppointmentReminderScreen";
 import { NotificationDialog } from "./src/screens/NotificationScreen";
 
 export default function App() {
@@ -27,6 +28,7 @@ export default function App() {
   const [medicationInfo, setMedicationInfo] =
     useState<DailyMedicationInfo | null>(null);
   const [reminderVisible, setReminderVisible] = useState(false);
+  const [appointmentReminderVisible, setAppointmentReminderVisible] = useState(false);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
 
   const goHome = () => setActiveTab("home");
@@ -43,6 +45,10 @@ export default function App() {
           <HomeScreen
             data={actions.data}
             openModal={openModal}
+            onSaveMood={(date, level) => actions.upsertMoodLog({ date, level })}
+            onSaveSleep={(date, sleep) =>
+              actions.upsertSleepLog({ date, ...sleep })
+            }
             onOpenMedicationInfo={setMedicationInfo}
             onOpenNotifications={openNotifications}
           />
@@ -82,9 +88,9 @@ export default function App() {
           <ReportScreen
             data={actions.data}
             openModal={openModal}
-            resetDemoData={actions.resetDemoData}
             toggleQuestion={actions.toggleQuestion}
             onOpenMedicationReminder={() => setReminderVisible(true)}
+            onOpenAppointmentReminder={() => setAppointmentReminderVisible(true)}
             onGoHome={goHome}
             onOpenNotifications={openNotifications}
           />
@@ -119,6 +125,11 @@ export default function App() {
       <MedicationReminderDialog
         visible={reminderVisible}
         onClose={() => setReminderVisible(false)}
+      />
+      <AppointmentReminderDialog
+        visible={appointmentReminderVisible}
+        data={actions.data}
+        onClose={() => setAppointmentReminderVisible(false)}
       />
       <NotificationDialog
         visible={notificationsVisible}

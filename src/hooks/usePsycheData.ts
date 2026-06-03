@@ -8,8 +8,10 @@ import type {
   Medication,
   MedicationEvent,
   MedicationLog,
+  MoodLog,
   PsycheData,
   SideEffectLog,
+  SleepLog,
   SymptomLog,
   Visit,
 } from '../types';
@@ -20,6 +22,14 @@ const STORAGE_KEY = 'psyche:v2:data';
 const createId = (prefix: string) =>
   `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
+const normalizeData = (data: PsycheData): PsycheData => ({
+  ...seedData,
+  ...data,
+  medicationLogs: data.medicationLogs ?? [],
+  moodLogs: data.moodLogs ?? [],
+  sleepLogs: data.sleepLogs ?? [],
+});
+
 export const usePsycheData = () => {
   const [data, setData] = useState<PsycheData>(seedData);
   const [isReady, setIsReady] = useState(false);
@@ -29,7 +39,7 @@ export const usePsycheData = () => {
       try {
         const saved = await AsyncStorage.getItem(STORAGE_KEY);
         if (saved) {
-          setData(JSON.parse(saved) as PsycheData);
+          setData(normalizeData(JSON.parse(saved) as PsycheData));
         }
       } finally {
         setIsReady(true);
@@ -101,6 +111,38 @@ export const usePsycheData = () => {
       ...current,
       effectLogs: [{ ...log, id: createId('effect') }, ...current.effectLogs],
     }));
+  }, []);
+
+  const upsertMoodLog = useCallback((log: Omit<MoodLog, 'id'>) => {
+    setData((current) => {
+      const moodLogs = current.moodLogs ?? [];
+      const existing = moodLogs.find((item) => item.date === log.date);
+
+      return {
+        ...current,
+        moodLogs: existing
+          ? moodLogs.map((item) =>
+              item.date === log.date ? { ...item, ...log } : item,
+            )
+          : [{ ...log, id: createId('mood') }, ...moodLogs],
+      };
+    });
+  }, []);
+
+  const upsertSleepLog = useCallback((log: Omit<SleepLog, 'id'>) => {
+    setData((current) => {
+      const sleepLogs = current.sleepLogs ?? [];
+      const existing = sleepLogs.find((item) => item.date === log.date);
+
+      return {
+        ...current,
+        sleepLogs: existing
+          ? sleepLogs.map((item) =>
+              item.date === log.date ? { ...item, ...log } : item,
+            )
+          : [{ ...log, id: createId('sleep') }, ...sleepLogs],
+      };
+    });
   }, []);
 
   const addQuestion = useCallback((text: string) => {
@@ -192,6 +234,8 @@ export const usePsycheData = () => {
       addSymptomLog,
       addSideEffectLog,
       addEffectLog,
+      upsertMoodLog,
+      upsertSleepLog,
       addQuestion,
       toggleQuestion,
       resetDemoData,
@@ -209,6 +253,8 @@ export const usePsycheData = () => {
       addSymptomLog,
       addSideEffectLog,
       addEffectLog,
+      upsertMoodLog,
+      upsertSleepLog,
       addQuestion,
       toggleQuestion,
       resetDemoData,

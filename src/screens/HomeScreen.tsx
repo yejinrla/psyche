@@ -14,35 +14,72 @@ import { ButterflyIcon } from "../components/ButterflyIcon";
 import { theme } from "../constants";
 import { latestAppointment } from "../utils/analytics";
 import { daysUntil, todayISO as todayISOUtil } from "../utils/date";
-import type { DailyMedicationInfo, ModalKind, PsycheData } from "../types";
+import type {
+  DailyMedicationInfo,
+  MedicationLog,
+  ModalKind,
+  PsycheData,
+  SymptomLog,
+} from "../types";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
+function toLocalDateISO(date: Date) {
+  const localTime = date.getTime() - date.getTimezoneOffset() * 60 * 1000;
+  return new Date(localTime).toISOString().slice(0, 10);
+}
+
 function buildWeekStrip() {
   const names = ["일", "월", "화", "수", "목", "금", "토"];
   const today = new Date();
+  const todayISO = todayISOUtil();
   const start = new Date(today);
   start.setDate(today.getDate() - today.getDay());
 
   return names.map((name, index) => {
     const date = new Date(start);
     date.setDate(start.getDate() + index);
+    const isoDate = toLocalDateISO(date);
 
     return {
-      key: `${name}-${date.toISOString()}`,
+      key: isoDate,
+      date: isoDate,
       name,
       day: String(date.getDate()).padStart(2, "0"),
-      isToday: date.toDateString() === today.toDateString(),
+      isToday: isoDate === todayISO,
     };
   });
+}
+
+function formatHomeTitle(date: string) {
+  if (date === todayISOUtil()) {
+    return "TODAY";
+  }
+
+  return new Intl.DateTimeFormat("ko-KR", {
+    month: "long",
+    day: "numeric",
+  }).format(new Date(`${date}T00:00:00`));
 }
 
 function toDotMonthDay(date: string) {
   const parsed = new Date(`${date}T00:00:00`);
   return `${String(parsed.getMonth() + 1).padStart(2, "0")}.${String(parsed.getDate()).padStart(2, "0")}`;
 }
+
+type SleepDraft = {
+  bedTime: string;
+  wakeTime: string;
+  quality: number | null;
+};
+
+const DEFAULT_SLEEP_DRAFT: SleepDraft = {
+  bedTime: "23:00",
+  wakeTime: "07:00",
+  quality: null,
+};
 
 // ---------------------------------------------------------------------------
 // SymptomSheet
@@ -131,8 +168,17 @@ function SymptomSheet({ symptom, onClose }: { symptom: string | null; onClose: (
 const MOOD_LEVELS = ["최악", "별로", "그냥 그래", "좋아", "최고"] as const;
 const MOOD_EMOJIS = ["😔", "😕", "🌤️", "😊", "🌈"] as const;
 
-function MoodCard() {
-  const [step, setStep] = useState(2);
+function MoodCard({
+  isToday,
+  step,
+  onStepChange,
+  symptomLogs,
+}: {
+  isToday: boolean;
+  step: number;
+  onStepChange: (step: number) => void;
+  symptomLogs: SymptomLog[];
+}) {
   const trackWidth = useRef(0);
   const [activeSymptom, setActiveSymptom] = useState<string | null>(null);
 
@@ -143,7 +189,7 @@ function MoodCard() {
   const snapToStep = (x: number) => {
     if (trackWidth.current <= 0) return;
     const ratio = Math.max(0, Math.min(1, x / trackWidth.current));
-    setStep(Math.round(ratio * (MOOD_LEVELS.length - 1)));
+    onStepChange(Math.round(ratio * (MOOD_LEVELS.length - 1)));
   };
 
   const panResponder = useRef(
@@ -157,7 +203,9 @@ function MoodCard() {
 
   return (
     <View style={styles.moodCard}>
-      <Text style={styles.moodTitle}>오늘 기분이 어때요?</Text>
+      <Text style={styles.moodTitle}>
+        {isToday ? "오늘 기분이 어때요?" : "이날 기분이 어땠나요?"}
+      </Text>
       <Text style={styles.moodEmoji}>{emoji}</Text>
       <View
         style={styles.moodTrackWrap}
@@ -189,6 +237,22 @@ function MoodCard() {
       <Text style={styles.moodLabel}>{label}</Text>
 
       <View style={styles.moodDivider} />
+
+      <View style={styles.dayRecordBox}>
+        <Text style={styles.dayRecordTitle}>이날 증상 기록</Text>
+        {symptomLogs.length > 0 ? (
+          symptomLogs.slice(0, 2).map((log) => (
+            <Text key={log.id} style={styles.dayRecordText} numberOfLines={1}>
+              {log.symptom} · 강도 {log.level}/5
+              {log.memo ? ` · ${log.memo}` : ""}
+            </Text>
+          ))
+        ) : (
+          <Text style={styles.dayRecordTextMuted}>
+            이 날짜에 기록된 증상이 없어요.
+          </Text>
+        )}
+      </View>
 
       <View style={styles.moodAvatarRow}>
         {([
@@ -226,10 +290,16 @@ const SLEEP_QUALITY = [
   { emoji: "😴", label: "푹잠" },
 ] as const;
 
-function SleepCard() {
-  const [bedTime, setBedTime] = useState("23:00");
-  const [wakeTime, setWakeTime] = useState("07:00");
-  const [quality, setQuality] = useState<number | null>(null);
+function SleepCard({
+  sleep,
+  hasRecord,
+  onChange,
+}: {
+  sleep: SleepDraft;
+  hasRecord: boolean;
+  onChange: (patch: Partial<SleepDraft>) => void;
+}) {
+  const { bedTime, wakeTime, quality } = sleep;
 
   const duration = (() => {
     const [bh, bm] = bedTime.split(":").map(Number);
@@ -246,12 +316,15 @@ function SleepCard() {
         <Text style={styles.sleepCardTitle}>😴  수면 기록</Text>
         <Text style={styles.sleepDuration}>{duration}</Text>
       </View>
+      <Text style={styles.sleepRecordHint}>
+        {hasRecord ? "선택한 날짜의 수면 기록" : "이 날짜의 수면 기록을 입력해 주세요."}
+      </Text>
       <View style={styles.sleepTimeRow}>
         <View style={styles.sleepTimeBlock}>
           <Text style={styles.sleepTimeLabel}>취침</Text>
           <TextInput
             value={bedTime}
-            onChangeText={setBedTime}
+            onChangeText={(value) => onChange({ bedTime: value })}
             style={styles.sleepTimeInput}
             keyboardType="numbers-and-punctuation"
           />
@@ -261,7 +334,7 @@ function SleepCard() {
           <Text style={styles.sleepTimeLabel}>기상</Text>
           <TextInput
             value={wakeTime}
-            onChangeText={setWakeTime}
+            onChangeText={(value) => onChange({ wakeTime: value })}
             style={styles.sleepTimeInput}
             keyboardType="numbers-and-punctuation"
           />
@@ -276,7 +349,7 @@ function SleepCard() {
             <Pressable
               key={label}
               style={[styles.sleepQualityBtn, active && styles.sleepQualityBtnActive]}
-              onPress={() => setQuality(i)}
+              onPress={() => onChange({ quality: i })}
             >
               <Text style={styles.sleepQualityEmoji}>{emoji}</Text>
               <Text style={[styles.sleepQualityLabel, active && styles.sleepQualityLabelActive]}>
@@ -295,8 +368,12 @@ function SleepCard() {
 // ---------------------------------------------------------------------------
 
 function TimeOfDayCard({
+  selectedDate,
+  medicationLogs,
   onOpenMedicationInfo,
 }: {
+  selectedDate: string;
+  medicationLogs: MedicationLog[];
   onOpenMedicationInfo: (medication: DailyMedicationInfo) => void;
 }) {
   const [selected, setSelected] = useState<TimeOfDay>("아침");
@@ -311,10 +388,16 @@ function TimeOfDayCard({
   // 수시 탭: 필요 시 복용하는 약만 표시
   const asNeededMeds = [{ name: "자나팜정 0.25mg", qty: 0.5 }];
   const medications = selected === "수시" ? asNeededMeds : scheduledMeds;
-  const [checked, setChecked] = useState<Record<string, boolean>>({});
+  const [checkedByDate, setCheckedByDate] = useState<Record<string, Record<string, boolean>>>({});
 
   const toggle = (med: string) =>
-    setChecked((prev) => ({ ...prev, [med]: !prev[med] }));
+    setCheckedByDate((prev) => ({
+      ...prev,
+      [selectedDate]: {
+        ...(prev[selectedDate] ?? {}),
+        [med]: !(prev[selectedDate]?.[med] ?? false),
+      },
+    }));
 
   return (
     <View style={styles.timeOfDayCard}>
@@ -333,7 +416,7 @@ function TimeOfDayCard({
       </View>
       <View style={styles.timeOfDayMedList}>
         {medications.map(({ name, qty }, i) => {
-          const done = !!checked[name];
+          const done = !!checkedByDate[selectedDate]?.[name];
           return (
             <View
               key={name}
@@ -436,6 +519,25 @@ function TimeOfDayCard({
           );
         })}
       </View>
+      <View style={styles.selectedMedicationLogBox}>
+        <Text style={styles.selectedMedicationLogTitle}>선택 날짜 복약 기록</Text>
+        {medicationLogs.length > 0 ? (
+          medicationLogs.map((log) => (
+            <View key={log.id} style={styles.selectedMedicationLogRow}>
+              <Text style={styles.selectedMedicationLogName} numberOfLines={1}>
+                {log.medicationName}
+              </Text>
+              <Text style={styles.selectedMedicationLogMeta}>
+                {log.time} · {log.dose}
+              </Text>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.dayRecordTextMuted}>
+            이 날짜에 저장된 복약 기록이 없어요.
+          </Text>
+        )}
+      </View>
     </View>
   );
 }
@@ -447,16 +549,21 @@ function TimeOfDayCard({
 export function HomeScreen({
   data,
   openModal,
+  onSaveMood,
+  onSaveSleep,
   onOpenMedicationInfo,
   onOpenNotifications,
 }: {
   data: PsycheData;
   openModal: (kind: Exclude<ModalKind, null>) => void;
+  onSaveMood: (date: string, level: number) => void;
+  onSaveSleep: (date: string, sleep: SleepDraft) => void;
   onOpenMedicationInfo: (medication: DailyMedicationInfo) => void;
   onOpenNotifications?: () => void;
 }) {
+  const today = todayISOUtil();
+  const [selectedDate, setSelectedDate] = useState(today);
   const appointmentVisit = useMemo(() => {
-    const today = todayISOUtil();
     const visitsWithAppointment = data.visits
       .flatMap((visit) =>
         visit.nextAppointment
@@ -479,6 +586,34 @@ export function HomeScreen({
   const appointmentDoctor = appointmentVisit?.doctorName?.trim() ?? "";
   const appointment = appointmentVisit?.appointment ?? latestAppointment(data);
   const weekDays = useMemo(() => buildWeekStrip(), []);
+  const selectedMoodLog = (data.moodLogs ?? []).find(
+    (log) => log.date === selectedDate,
+  );
+  const selectedSleepLog = (data.sleepLogs ?? []).find(
+    (log) => log.date === selectedDate,
+  );
+  const selectedMoodStep = selectedMoodLog?.level ?? 2;
+  const selectedSleep = selectedSleepLog ?? DEFAULT_SLEEP_DRAFT;
+  const selectedSleepHasRecord = Boolean(selectedSleepLog);
+  const selectedDateSymptomLogs = useMemo(
+    () => data.symptomLogs.filter((log) => log.date === selectedDate),
+    [data.symptomLogs, selectedDate],
+  );
+  const selectedDateMedicationLogs = useMemo(
+    () =>
+      [...(data.medicationLogs ?? [])]
+        .filter((log) => log.date === selectedDate)
+        .sort((a, b) => a.time.localeCompare(b.time)),
+    [data.medicationLogs, selectedDate],
+  );
+  const updateSelectedSleep = (patch: Partial<SleepDraft>) => {
+    onSaveSleep(selectedDate, {
+      bedTime: selectedSleep.bedTime,
+      wakeTime: selectedSleep.wakeTime,
+      quality: selectedSleep.quality,
+      ...patch,
+    });
+  };
 
   return (
     <ScrollView
@@ -498,36 +633,56 @@ export function HomeScreen({
             <Bell color="#20212B" size={20} strokeWidth={2.6} />
           </Pressable>
         </View>
-        <Text style={styles.morningTitle}>TODAY</Text>
+        <Text style={styles.morningTitle}>{formatHomeTitle(selectedDate)}</Text>
         <View style={styles.weekStrip}>
           {weekDays.map((day) => (
-            <View
+            <Pressable
               key={day.key}
-              style={[styles.weekItem, day.isToday && styles.weekItemActive]}
+              style={[
+                styles.weekItem,
+                day.date === selectedDate && styles.weekItemActive,
+              ]}
+              onPress={() => setSelectedDate(day.date)}
             >
               <Text
-                style={[styles.weekName, day.isToday && styles.weekNameActive]}
+                style={[
+                  styles.weekName,
+                  day.date === selectedDate && styles.weekNameActive,
+                ]}
               >
                 {day.name}
               </Text>
               <Text
                 style={[
                   styles.weekNumber,
-                  day.isToday && styles.weekNumberActive,
+                  day.date === selectedDate && styles.weekNumberActive,
                 ]}
               >
                 {day.day}
               </Text>
-            </View>
+            </Pressable>
           ))}
         </View>
       </View>
 
-      <MoodCard />
+      <MoodCard
+        isToday={selectedDate === today}
+        step={selectedMoodStep}
+        onStepChange={(step) => onSaveMood(selectedDate, step)}
+        symptomLogs={selectedDateSymptomLogs}
+      />
 
-      <SleepCard />
+      <SleepCard
+        sleep={selectedSleep}
+        hasRecord={selectedSleepHasRecord}
+        onChange={updateSelectedSleep}
+      />
 
-      <TimeOfDayCard onOpenMedicationInfo={onOpenMedicationInfo} />
+      <TimeOfDayCard
+        selectedDate={selectedDate}
+        medicationLogs={selectedDateMedicationLogs}
+        onOpenMedicationInfo={onOpenMedicationInfo}
+      />
 
       <Pressable
         style={styles.nextVisitCard}
@@ -741,6 +896,34 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 16,
   },
+  dayRecordBox: {
+    width: "100%",
+    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#ECEAF6",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 16,
+    gap: 5,
+  },
+  dayRecordTitle: {
+    color: "#20212B",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  dayRecordText: {
+    color: "#626675",
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: "600",
+  },
+  dayRecordTextMuted: {
+    color: "#9A9DAA",
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: "600",
+  },
   moodAvatarRow: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -795,6 +978,14 @@ const styles = StyleSheet.create({
     color: "#4025E8",
     fontSize: 16,
     fontWeight: "800",
+  },
+  sleepRecordHint: {
+    color: "#9096A2",
+    fontSize: 12,
+    lineHeight: 17,
+    fontWeight: "600",
+    marginTop: -8,
+    marginBottom: 14,
   },
   sleepTimeRow: {
     flexDirection: "row",
@@ -977,6 +1168,37 @@ const styles = StyleSheet.create({
   },
   timeOfDayMedList: {
     marginTop: 12,
+  },
+  selectedMedicationLogBox: {
+    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#ECEAF6",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginTop: 10,
+    gap: 8,
+  },
+  selectedMedicationLogTitle: {
+    color: "#20212B",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  selectedMedicationLogRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  selectedMedicationLogName: {
+    flex: 1,
+    color: "#626675",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  selectedMedicationLogMeta: {
+    color: "#4025E8",
+    fontSize: 12,
+    fontWeight: "800",
   },
   timeOfDayMedRow: {
     flexDirection: "row",

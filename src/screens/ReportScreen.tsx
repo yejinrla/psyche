@@ -14,7 +14,6 @@ import {
   ChevronRight,
   Hospital,
   Pill,
-  RotateCcw,
   TrendingUp,
 } from "lucide-react-native";
 import { MiniBarChart, SectionHeader } from "../components/SharedComponents";
@@ -109,23 +108,22 @@ function FrequencyList({
 export function ReportScreen({
   data,
   openModal,
-  resetDemoData,
   toggleQuestion,
   onOpenMedicationReminder,
+  onOpenAppointmentReminder,
   onGoHome,
   onOpenNotifications,
 }: {
   data: PsycheData;
   openModal: (kind: Exclude<ModalKind, null>) => void;
-  resetDemoData: () => void;
   toggleQuestion: PsycheDataActions["toggleQuestion"];
   onOpenMedicationReminder: () => void;
+  onOpenAppointmentReminder: () => void;
   onGoHome?: () => void;
   onOpenNotifications?: () => void;
 }) {
   const summary = generateVisitPrepSummary(data);
   const symptoms = sortByDateAsc(data.symptomLogs).slice(-7);
-  const effects = sortByDateAsc(data.effectLogs).slice(-5);
   const sideEffects = sideEffectFrequency(data, 30);
   const symptomCounts = symptomFrequency(data, 30);
   const activeMeds = activeMedications(data.medications);
@@ -221,22 +219,6 @@ export function ReportScreen({
         />
       </View>
 
-      <Text style={styles.sectionTitle}>체감 효과</Text>
-      <View style={styles.panel}>
-        <MiniBarChart
-          values={effects.map((log) => ({
-            label: formatShortDate(log.date),
-            value: Math.round(
-              (log.anxietyRelief +
-                log.sleepImprovement +
-                log.focusImprovement) /
-                3,
-            ),
-          }))}
-          color={theme.teal}
-        />
-      </View>
-
       <Text style={styles.sectionTitle}>부작용 빈도</Text>
       <FrequencyList
         rows={sideEffects}
@@ -315,9 +297,17 @@ export function ReportScreen({
         <ChevronRight color="#A2A4AF" size={19} strokeWidth={2.4} />
       </Pressable>
 
-      <Pressable style={styles.resetButton} onPress={resetDemoData}>
-        <RotateCcw color="#4025E8" size={18} strokeWidth={2.4} />
-        <Text style={styles.resetText}>샘플 데이터로 되돌리기</Text>
+      <Pressable style={styles.settingRow} onPress={onOpenAppointmentReminder}>
+        <View style={styles.settingIconBox}>
+          <Hospital color="#4025E8" size={18} strokeWidth={2.4} />
+        </View>
+        <View style={styles.flex1}>
+          <Text style={styles.settingTitle}>병원 예약 알림 설정</Text>
+          <Text style={styles.settingMeta}>
+            다음 진료 전날 · 당일 · 1시간 전 알림
+          </Text>
+        </View>
+        <ChevronRight color="#A2A4AF" size={19} strokeWidth={2.4} />
       </Pressable>
     </ScrollView>
   );
@@ -600,20 +590,4 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  // 리셋
-  resetButton: {
-    minHeight: 48,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: "#DDD9F8",
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  resetText: {
-    color: "#4025E8",
-    fontSize: 14,
-    fontWeight: "800",
-  },
 });

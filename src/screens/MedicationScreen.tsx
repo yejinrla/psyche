@@ -234,9 +234,10 @@ export function MedicationScreen({
 
 const styles = StyleSheet.create({
   screenContent: {
-    padding: 20,
-    paddingBottom: 28,
-    gap: 16,
+    paddingHorizontal: 10,
+    paddingTop: 8,
+    paddingBottom: 122,
+    gap: 14,
   },
   listStack: {
     gap: 12,

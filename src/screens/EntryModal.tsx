@@ -10,7 +10,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { X } from "lucide-react-native";
+import { Plus, X } from "lucide-react-native";
 import {
   FormFooter,
   OptionGrid,
@@ -517,6 +517,8 @@ function MedicationLogForm({
   const [mealTime, setMealTime] = useState<MealTime>('아침');
   const [quantity, setQuantity] = useState(1);
   const [selectedEffects, setSelectedEffects] = useState<SideEffectType[]>([]);
+  const [customEffectInput, setCustomEffectInput] = useState("");
+  const [customSideEffects, setCustomSideEffects] = useState<SideEffectType[]>([]);
   const [sideEffectIntensity, setSideEffectIntensity] = useState<Rating>(3);
   const [memo, setMemo] = useState('');
 
@@ -524,11 +526,40 @@ function MedicationLogForm({
   const hasSideEffect = selectedEffects.length > 0;
 
   const INTENSITY_LABELS = ['약함', '약간', '보통', '강함', '매우 강함'];
+  const sideEffectChoices = [
+    "졸림",
+    "두통",
+    "어지러움",
+    "메스꺼움",
+    "입마름",
+    ...customSideEffects,
+  ] as SideEffectType[];
 
   const toggleEffect = (effect: SideEffectType) => {
     setSelectedEffects(prev =>
       prev.includes(effect) ? prev.filter(e => e !== effect) : [...prev, effect]
     );
+  };
+
+  const addCustomSideEffect = () => {
+    const nextEffect = customEffectInput.trim();
+    if (!nextEffect) {
+      return;
+    }
+
+    const sideEffect = nextEffect as SideEffectType;
+    if (!sideEffectChoices.includes(sideEffect)) {
+      setCustomSideEffects((prev) => [...prev, sideEffect]);
+    }
+    setSelectedEffects((prev) =>
+      prev.includes(sideEffect) ? prev : [...prev, sideEffect],
+    );
+    setCustomEffectInput("");
+  };
+
+  const removeCustomSideEffect = (effect: SideEffectType) => {
+    setCustomSideEffects((prev) => prev.filter((item) => item !== effect));
+    setSelectedEffects((prev) => prev.filter((item) => item !== effect));
   };
 
   const save = () => {
@@ -632,26 +663,64 @@ function MedicationLogForm({
         >
           <Text style={[ml.effectChipText, !hasSideEffect && ml.effectChipNoneText]}>없음</Text>
         </Pressable>
-        {(["졸림", "두통", "어지러움", "메스꺼움", "입마름"] as SideEffectType[]).map((effect) => {
+        {sideEffectChoices.map((effect) => {
           const active = selectedEffects.includes(effect);
+          const isCustom = customSideEffects.includes(effect);
           return (
             <Pressable
               key={effect}
               style={[ml.effectChip, active && ml.effectChipActive]}
               onPress={() => toggleEffect(effect)}
             >
-              {active && <Text style={ml.effectChipWarning}>⚠ </Text>}
               <Text style={[ml.effectChipText, active && ml.effectChipActiveText]}>{effect}</Text>
+              {isCustom ? (
+                <Pressable
+                  accessibilityLabel={`${effect} 삭제`}
+                  hitSlop={6}
+                  style={[
+                    ml.removeEffectButton,
+                    active && ml.removeEffectButtonActive,
+                  ]}
+                  onPress={(event) => {
+                    event.stopPropagation();
+                    removeCustomSideEffect(effect);
+                  }}
+                >
+                  <X
+                    color={active ? "#4025E8" : "#8F8D9E"}
+                    size={12}
+                    strokeWidth={2.8}
+                  />
+                </Pressable>
+              ) : null}
             </Pressable>
           );
         })}
+        <View style={ml.addEffectChip}>
+          <TextInput
+            style={ml.addEffectInput}
+            placeholder="직접 추가"
+            placeholderTextColor="#A7A7B2"
+            value={customEffectInput}
+            onChangeText={setCustomEffectInput}
+            onSubmitEditing={addCustomSideEffect}
+            returnKeyType="done"
+          />
+          <Pressable
+            style={ml.addEffectButton}
+            onPress={addCustomSideEffect}
+            hitSlop={6}
+          >
+            <Plus color="#4025E8" size={15} strokeWidth={2.8} />
+          </Pressable>
+        </View>
       </View>
 
       {/* 강도 */}
       {hasSideEffect && (
         <>
           <View style={ml.sectionRow}>
-            <Text style={ml.sectionLabel}>{selectedEffects[0]} 강도</Text>
+            <Text style={ml.sectionLabel}>부작용 강도</Text>
             <Text style={ml.intensityLabel}>{INTENSITY_LABELS[sideEffectIntensity - 1]}</Text>
           </View>
           <View style={ml.intensityBarRow}>
@@ -915,8 +984,8 @@ const ml = StyleSheet.create({
     borderColor: '#AEAEC0',
   },
   effectChipActive: {
-    backgroundColor: '#FFF4E5',
-    borderColor: '#E8952A',
+    backgroundColor: '#EBE8FD',
+    borderColor: '#4025E8',
   },
   effectChipText: {
     fontSize: 13,
@@ -927,16 +996,59 @@ const ml = StyleSheet.create({
     color: '#555',
   },
   effectChipActiveText: {
-    color: '#C97A1A',
+    color: '#4025E8',
   },
-  effectChipWarning: {
-    fontSize: 12,
-    color: '#E8952A',
+  removeEffectButton: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    marginLeft: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E8E7EF',
+  },
+  removeEffectButtonActive: {
+    backgroundColor: '#DCD7FF',
+  },
+  addEffectChip: {
+    minHeight: 40,
+    width: 112,
+    minWidth: 0,
+    maxWidth: 112,
+    flexGrow: 0,
+    flexShrink: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingLeft: 14,
+    paddingRight: 8,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#DAD8E8',
+  },
+  addEffectInput: {
+    width: 48,
+    flexGrow: 0,
+    flexShrink: 1,
+    color: '#20212B',
+    fontSize: 13,
+    fontWeight: '600',
+    paddingVertical: 0,
+    outlineStyle: 'none' as never,
+  },
+  addEffectButton: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EBE8FD',
   },
   intensityLabel: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#E8952A',
+    color: '#4025E8',
   },
   intensityBarRow: {
     flexDirection: 'row',
@@ -950,7 +1062,7 @@ const ml = StyleSheet.create({
     backgroundColor: '#EEEEF0',
   },
   intensityBarActive: {
-    backgroundColor: '#E8952A',
+    backgroundColor: '#4025E8',
   },
 });
 

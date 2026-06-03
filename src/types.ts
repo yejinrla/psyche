@@ -107,6 +107,20 @@ export type EffectLog = {
   memo?: string;
 };
 
+export type MoodLog = {
+  id: string;
+  date: string;
+  level: number;
+};
+
+export type SleepLog = {
+  id: string;
+  date: string;
+  bedTime: string;
+  wakeTime: string;
+  quality: number | null;
+};
+
 export type DoctorQuestion = {
   id: string;
   text: string;
@@ -121,6 +135,8 @@ export type PsycheData = {
   symptomLogs: SymptomLog[];
   sideEffectLogs: SideEffectLog[];
   effectLogs: EffectLog[];
+  moodLogs: MoodLog[];
+  sleepLogs: SleepLog[];
   questions: DoctorQuestion[];
   medicationLogs: MedicationLog[];
 };
