@@ -72,11 +72,13 @@ export function MedicationScreen({
         contentContainerStyle={styles.screenContent}
         showsVerticalScrollIndicator={false}
       >
-        <ScreenTopHeader
-          title="약물"
-          onPressBrand={onGoHome}
-          onPressNotification={onOpenNotifications}
-        />
+        <View style={styles.medicationHeader}>
+          <ScreenTopHeader
+            title="약물"
+            onPressBrand={onGoHome}
+            onPressNotification={onOpenNotifications}
+          />
+        </View>
         <SectionHeader
           title="약물 관리"
           actionLabel="약 추가"
@@ -238,6 +240,9 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 122,
     gap: 14,
+  },
+  medicationHeader: {
+    paddingHorizontal: 10,
   },
   listStack: {
     gap: 12,

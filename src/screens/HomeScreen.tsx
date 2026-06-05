@@ -16,7 +16,6 @@ import { latestAppointment } from "../utils/analytics";
 import { daysUntil, todayISO as todayISOUtil } from "../utils/date";
 import type {
   DailyMedicationInfo,
-  MedicationLog,
   ModalKind,
   PsycheData,
   SymptomLog,
@@ -369,11 +368,9 @@ function SleepCard({
 
 function TimeOfDayCard({
   selectedDate,
-  medicationLogs,
   onOpenMedicationInfo,
 }: {
   selectedDate: string;
-  medicationLogs: MedicationLog[];
   onOpenMedicationInfo: (medication: DailyMedicationInfo) => void;
 }) {
   const [selected, setSelected] = useState<TimeOfDay>("아침");
@@ -519,25 +516,6 @@ function TimeOfDayCard({
           );
         })}
       </View>
-      <View style={styles.selectedMedicationLogBox}>
-        <Text style={styles.selectedMedicationLogTitle}>선택 날짜 복약 기록</Text>
-        {medicationLogs.length > 0 ? (
-          medicationLogs.map((log) => (
-            <View key={log.id} style={styles.selectedMedicationLogRow}>
-              <Text style={styles.selectedMedicationLogName} numberOfLines={1}>
-                {log.medicationName}
-              </Text>
-              <Text style={styles.selectedMedicationLogMeta}>
-                {log.time} · {log.dose}
-              </Text>
-            </View>
-          ))
-        ) : (
-          <Text style={styles.dayRecordTextMuted}>
-            이 날짜에 저장된 복약 기록이 없어요.
-          </Text>
-        )}
-      </View>
     </View>
   );
 }
@@ -598,13 +576,6 @@ export function HomeScreen({
   const selectedDateSymptomLogs = useMemo(
     () => data.symptomLogs.filter((log) => log.date === selectedDate),
     [data.symptomLogs, selectedDate],
-  );
-  const selectedDateMedicationLogs = useMemo(
-    () =>
-      [...(data.medicationLogs ?? [])]
-        .filter((log) => log.date === selectedDate)
-        .sort((a, b) => a.time.localeCompare(b.time)),
-    [data.medicationLogs, selectedDate],
   );
   const updateSelectedSleep = (patch: Partial<SleepDraft>) => {
     onSaveSleep(selectedDate, {
@@ -680,7 +651,6 @@ export function HomeScreen({
 
       <TimeOfDayCard
         selectedDate={selectedDate}
-        medicationLogs={selectedDateMedicationLogs}
         onOpenMedicationInfo={onOpenMedicationInfo}
       />
 
@@ -1168,37 +1138,6 @@ const styles = StyleSheet.create({
   },
   timeOfDayMedList: {
     marginTop: 12,
-  },
-  selectedMedicationLogBox: {
-    borderRadius: 16,
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: "#ECEAF6",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginTop: 10,
-    gap: 8,
-  },
-  selectedMedicationLogTitle: {
-    color: "#20212B",
-    fontSize: 13,
-    fontWeight: "800",
-  },
-  selectedMedicationLogRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  selectedMedicationLogName: {
-    flex: 1,
-    color: "#626675",
-    fontSize: 12,
-    fontWeight: "700",
-  },
-  selectedMedicationLogMeta: {
-    color: "#4025E8",
-    fontSize: 12,
-    fontWeight: "800",
   },
   timeOfDayMedRow: {
     flexDirection: "row",

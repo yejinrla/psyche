@@ -326,9 +326,10 @@ const cardShadow = Platform.select({
 
 const styles = StyleSheet.create({
   screenContent: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 8,
     paddingBottom: 28,
-    gap: 16,
+    gap: 14,
   },
   flex1: {
     flex: 1,
