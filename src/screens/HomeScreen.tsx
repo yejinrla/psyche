@@ -792,7 +792,7 @@ export function HomeScreen({
       {pastVisits.length > 0 && (() => {
         const visit = pastVisits[0];
         return (
-          <View style={styles.nextVisitCard}>
+          <Pressable style={styles.nextVisitCard} onPress={() => openModal("visit")}>
             <View style={styles.nextVisitHeader}>
               <View style={styles.nextVisitTitleBlock}>
                 <View style={styles.nextVisitTitleRow}>
@@ -827,7 +827,7 @@ export function HomeScreen({
                 </Text>
               </View>
             </View>
-          </View>
+          </Pressable>
         );
       })()}
     </ScrollView>
