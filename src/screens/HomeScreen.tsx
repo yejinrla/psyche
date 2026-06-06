@@ -31,21 +31,19 @@ function toLocalDateISO(date: Date) {
 }
 
 function buildWeekStrip() {
-  const names = ["일", "월", "화", "수", "목", "금", "토"];
+  const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
   const today = new Date();
   const todayISO = todayISOUtil();
-  const start = new Date(today);
-  start.setDate(today.getDate() - today.getDay());
 
-  return names.map((name, index) => {
-    const date = new Date(start);
-    date.setDate(start.getDate() + index);
+  return [-3, -2, -1, 0, 1, 2, 3].map((offset) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() + offset);
     const isoDate = toLocalDateISO(date);
 
     return {
       key: isoDate,
       date: isoDate,
-      name,
+      name: dayNames[date.getDay()],
       day: String(date.getDate()).padStart(2, "0"),
       isToday: isoDate === todayISO,
     };
