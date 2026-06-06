@@ -122,26 +122,42 @@ function SymptomSheet({ symptom, onClose }: { symptom: string | null; onClose: (
           </View>
 
           <Text style={styles.anxietySheetSectionLabel}>{symptom} 강도</Text>
-          <View style={styles.anxietyIntensityRow}>
-            {(["😌", "😟", "😰", "😨", "😱"] as const).map((emoji, i) => {
-              const n = i + 1;
-              const active = intensity === n;
-              return (
-                <Pressable
-                  key={n}
-                  style={[styles.anxietyIntensityCell, active && styles.anxietyIntensityCellActive]}
-                  onPress={() => setIntensity(n)}
-                >
-                  <Text style={[styles.anxietyIntensityEmoji, active && styles.anxietyIntensityEmojiActive]}>
-                    {emoji}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-          <View style={styles.anxietyIntensityScale}>
-            <Text style={styles.anxietyScaleLabel}>거의 없음</Text>
-            <Text style={styles.anxietyScaleLabel}>매우 심함</Text>
+          <View style={styles.eqContainer}>
+            <View style={styles.eqBarRow}>
+              {([
+                { color: "#4CD964", height: 18 },
+                { color: "#8BC34A", height: 28 },
+                { color: "#CDDC39", height: 38 },
+                { color: "#FFC107", height: 50 },
+                { color: "#FF9500", height: 62 },
+                { color: "#FF6B35", height: 50 },
+                { color: "#FF3B30", height: 62 },
+                { color: "#D50000", height: 74 },
+                { color: "#B71C1C", height: 74 },
+                { color: "#7F0000", height: 74 },
+              ] as const).map(({ color, height }, i) => {
+                const level = Math.ceil((i + 1) / 2); // 1~5
+                const filled = intensity !== null && (i + 1) <= (intensity * 2);
+                return (
+                  <Pressable
+                    key={i}
+                    style={styles.eqBarWrap}
+                    onPress={() => setIntensity(level)}
+                  >
+                    <View
+                      style={[
+                        styles.eqBar,
+                        { height, backgroundColor: filled ? color : "#E8E6F0" },
+                      ]}
+                    />
+                  </Pressable>
+                );
+              })}
+            </View>
+            <View style={styles.anxietyIntensityScale}>
+              <Text style={styles.anxietyScaleLabel}>거의 없음</Text>
+              <Text style={styles.anxietyScaleLabel}>매우 심함</Text>
+            </View>
           </View>
 
           <Text style={styles.anxietySheetSectionLabel}>상황</Text>
@@ -1500,30 +1516,27 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 4,
   },
-  anxietyIntensityRow: {
-    flexDirection: "row",
-    gap: 8,
+  eqContainer: {
+    gap: 6,
     marginBottom: 4,
   },
-  anxietyIntensityCell: {
+  eqBarRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    height: 80,
+    paddingHorizontal: 2,
+  },
+  eqBarWrap: {
     flex: 1,
-    height: 56,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: "#E1E0EE",
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#F7F7FB",
+    justifyContent: "flex-end",
+    height: "100%",
+    paddingHorizontal: 2,
   },
-  anxietyIntensityCellActive: {
-    borderColor: "#4025E8",
-    backgroundColor: "#EBE8FD",
-  },
-  anxietyIntensityEmoji: {
-    fontSize: 24,
-  },
-  anxietyIntensityEmojiActive: {
-    fontSize: 28,
+  eqBar: {
+    width: "100%",
+    borderRadius: 4,
   },
   anxietyIntensityScale: {
     flexDirection: "row",
