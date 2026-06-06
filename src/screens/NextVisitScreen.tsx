@@ -63,8 +63,9 @@ export function NextVisitScreen({
       transparent
       onRequestClose={onClose}
     >
-      <Pressable style={styles.overlay} onPress={onClose}>
-      <Pressable style={styles.container} onPress={() => {}}>
+      <View style={styles.overlay}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <View style={styles.container}>
         {/* 상단 바 */}
         <View style={styles.topBar}>
           <View style={styles.topBarSpacer} />
@@ -186,7 +187,7 @@ export function NextVisitScreen({
             )}
           </View>
         </ScrollView>
-      </View>
+        </View>
       </View>
     </Modal>
   );
