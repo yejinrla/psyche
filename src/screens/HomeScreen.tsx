@@ -13,7 +13,7 @@ import { Bell, Clock, Hospital, MapPin, Pill } from "lucide-react-native";
 import { ButterflyIcon } from "../components/ButterflyIcon";
 import { theme } from "../constants";
 import { latestAppointment } from "../utils/analytics";
-import { daysUntil, todayISO as todayISOUtil } from "../utils/date";
+import { daysUntil, formatShortDate, sortByDateDesc, todayISO as todayISOUtil } from "../utils/date";
 import type {
   DailyMedicationInfo,
   ModalKind,
@@ -545,6 +545,10 @@ export function HomeScreen({
   const appointmentHospital = appointmentVisit?.hospitalName ?? "온유 정신건강의학과";
   const appointmentDoctor = appointmentVisit?.doctorName?.trim() ?? "";
   const appointment = appointmentVisit?.appointment ?? latestAppointment(data);
+  const pastVisits = useMemo(
+    () => sortByDateDesc(data.visits).filter((v) => v.date < today).slice(0, 3),
+    [data.visits],
+  );
   const weekDays = useMemo(() => buildWeekStrip(), []);
   const selectedMoodLog = (data.moodLogs ?? []).find(
     (log) => log.date === selectedDate,
@@ -676,6 +680,41 @@ export function HomeScreen({
           </View>
         </View>
       </Pressable>
+
+      {pastVisits.length > 0 && (
+        <View style={styles.prevVisitCard}>
+          <View style={styles.prevVisitHeader}>
+            <Hospital color="#20212B" size={18} strokeWidth={2.4} />
+            <Text style={styles.prevVisitTitle}>이전 진료 기록</Text>
+          </View>
+          {pastVisits.map((visit, index) => (
+            <View
+              key={visit.id}
+              style={[
+                styles.prevVisitRow,
+                index === pastVisits.length - 1 && styles.prevVisitRowLast,
+              ]}
+            >
+              <View style={styles.prevVisitDateBadge}>
+                <Text style={styles.prevVisitDateText}>
+                  {formatShortDate(visit.date)}
+                </Text>
+              </View>
+              <View style={styles.prevVisitInfo}>
+                <Text style={styles.prevVisitHospital} numberOfLines={1}>
+                  {visit.hospitalName}
+                  {visit.doctorName ? ` · ${visit.doctorName}` : ""}
+                </Text>
+                {visit.outcomes.length > 0 && (
+                  <Text style={styles.prevVisitOutcome} numberOfLines={1}>
+                    {visit.outcomes.join(" · ")}
+                  </Text>
+                )}
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -1074,6 +1113,70 @@ const styles = StyleSheet.create({
     color: "#4025E8",
     fontSize: 14,
     fontWeight: "800",
+  },
+
+  // 이전 진료 기록
+  prevVisitCard: {
+    borderRadius: 22,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    gap: 0,
+    shadowColor: "#4025E8",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  prevVisitHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 14,
+  },
+  prevVisitTitle: {
+    color: "#20212B",
+    fontSize: 17,
+    fontWeight: "800",
+  },
+  prevVisitRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F2F2F6",
+  },
+  prevVisitRowLast: {
+    borderBottomWidth: 0,
+    paddingBottom: 0,
+  },
+  prevVisitDateBadge: {
+    minWidth: 60,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: "#F0EFF8",
+    alignItems: "center",
+  },
+  prevVisitDateText: {
+    color: "#6B5FD0",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  prevVisitInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  prevVisitHospital: {
+    color: "#20212B",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  prevVisitOutcome: {
+    color: "#9096A2",
+    fontSize: 12,
+    fontWeight: "600",
   },
   timeOfDayCard: {
     borderRadius: 24,
