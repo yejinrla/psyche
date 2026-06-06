@@ -645,7 +645,7 @@ export function HomeScreen({
   const appointmentDoctor = appointmentVisit?.doctorName?.trim() ?? "";
   const appointment = appointmentVisit?.appointment ?? latestAppointment(data);
   const pastVisits = useMemo(
-    () => sortByDateDesc(data.visits).filter((v) => v.date < today).slice(0, 3),
+    () => sortByDateDesc(data.visits).filter((v) => v.date < today).slice(0, 1),
     [data.visits],
   );
   const weekDays = useMemo(() => buildWeekStrip(), []);
