@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Modal,
-  PanResponder,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -189,7 +188,6 @@ function MoodCard({
   onStepChange: (step: number) => void;
   symptomLogs: SymptomLog[];
 }) {
-  const trackWidth = useRef(0);
   const [activeSymptom, setActiveSymptom] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
 
@@ -201,21 +199,6 @@ function MoodCard({
     month: "long",
     day: "numeric",
   }).format(new Date(`${date}T00:00:00`));
-
-  const snapToStep = (x: number) => {
-    if (trackWidth.current <= 0) return;
-    const ratio = Math.max(0, Math.min(1, x / trackWidth.current));
-    onStepChange(Math.round(ratio * (MOOD_LEVELS.length - 1)));
-  };
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (evt) => snapToStep(evt.nativeEvent.locationX),
-      onPanResponderMove: (evt) => snapToStep(evt.nativeEvent.locationX),
-    }),
-  ).current;
 
   // 이전 날: 5개 이모지 한번에 표시, 선택한 것 강조 / 펼치면 증상 버튼도 표시
   if (!isToday) {
@@ -286,14 +269,9 @@ function MoodCard({
     <View style={styles.moodCard}>
       <Text style={styles.moodTitle}>오늘 기분이 어때요?</Text>
       <Text style={styles.moodEmoji}>{emoji}</Text>
-      <View
-        style={styles.moodTrackWrap}
-        onLayout={(e) => {
-          trackWidth.current = e.nativeEvent.layout.width;
-        }}
-        {...panResponder.panHandlers}
-      >
-        <View style={styles.moodTrack}>
+      <View style={styles.moodTrackWrap}>
+        {/* 시각적 트랙 */}
+        <View style={styles.moodTrack} pointerEvents="none">
           <View style={[styles.moodFill, { width: `${value * 100}%` }]} />
           {[0, 1, 2, 3, 4].map((i) => (
             <View
@@ -311,6 +289,16 @@ function MoodCard({
               { left: `${value * 100}%`, marginLeft: -15 },
             ]}
           />
+        </View>
+        {/* 각 단계별 투명 터치 영역 */}
+        <View style={styles.moodStepHitRow}>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <Pressable
+              key={i}
+              style={styles.moodStepHit}
+              onPress={() => onStepChange(i)}
+            />
+          ))}
         </View>
       </View>
       <Text style={styles.moodLabel}>{label}</Text>
@@ -918,6 +906,19 @@ const styles = StyleSheet.create({
     width: "100%",
     paddingVertical: 16,
     paddingHorizontal: 16,
+    position: "relative",
+  },
+  moodStepHitRow: {
+    position: "absolute",
+    top: 0,
+    left: 16,
+    right: 16,
+    bottom: 0,
+    flexDirection: "row",
+  },
+  moodStepHit: {
+    flex: 1,
+    height: "100%",
   },
   moodTrack: {
     width: "100%",
