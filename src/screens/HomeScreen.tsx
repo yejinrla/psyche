@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Modal,
   PanResponder,
@@ -93,19 +93,28 @@ function SymptomSheet({ symptom, onClose }: { symptom: string | null; onClose: (
   const [situation, setSituation] = useState("");
   const [memo, setMemo] = useState("");
 
+  // 열릴 때마다 입력값 초기화
+  useEffect(() => {
+    if (symptom) {
+      setIntensity(null);
+      setSituation("");
+      setMemo("");
+    }
+  }, [symptom]);
+
   const handleSave = () => {
-    setIntensity(null);
-    setSituation("");
-    setMemo("");
     onClose();
   };
 
   const meta = symptom ? SYMPTOM_META[symptom] : null;
 
   return (
-    <Modal visible={!!symptom} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal visible={!!symptom} animationType="none" transparent onRequestClose={onClose}>
       <View style={styles.symptomSheetOverlay}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={(e) => { e.stopPropagation(); onClose(); }}
+        />
         <View style={styles.anxietySheet}>
           <View style={styles.anxietySheetHandle} />
           <View style={styles.anxietySheetHeader}>
