@@ -9,7 +9,6 @@ import {
   View,
 } from "react-native";
 import {
-  ArrowLeft,
   CalendarDays,
   CheckCircle2,
   Clock,
@@ -67,15 +66,9 @@ export function NextVisitScreen({
       <View style={styles.overlay}>
       <View style={styles.container}>
         {/* 핸들 */}
-        <View style={styles.handleBar} />
-        {/* 헤더 */}
-        <View style={styles.header}>
-          <Pressable style={styles.backBtn} onPress={onClose} hitSlop={8}>
-            <ArrowLeft color="#20212B" size={22} strokeWidth={2.4} />
-          </Pressable>
-          <Text style={styles.headerTitle}>다음 진료 준비</Text>
-          <View style={styles.backBtn} />
-        </View>
+        <Pressable style={styles.handleArea} onPress={onClose}>
+          <View style={styles.handleBar} />
+        </Pressable>
 
         <ScrollView
           contentContainerStyle={styles.content}
@@ -209,34 +202,16 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     overflow: "hidden",
   },
+  handleArea: {
+    alignItems: "center",
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
   handleBar: {
     width: 40,
     height: 4,
     borderRadius: 2,
     backgroundColor: "#DDD9F8",
-    alignSelf: "center",
-    marginTop: 12,
-    marginBottom: 4,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#EEEDF8",
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: "800",
-    color: "#20212B",
   },
   content: {
     paddingHorizontal: 20,
