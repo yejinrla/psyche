@@ -9,7 +9,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { Bell, Clock, Hospital, MapPin, Pill } from "lucide-react-native";
+import { Bell, ChevronDown, Clock, Hospital, MapPin, Pill } from "lucide-react-native";
 import { ButterflyIcon } from "../components/ButterflyIcon";
 import { theme } from "../constants";
 import { latestAppointment } from "../utils/analytics";
@@ -191,6 +191,7 @@ function MoodCard({
 }) {
   const trackWidth = useRef(0);
   const [activeSymptom, setActiveSymptom] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   const label = MOOD_LEVELS[step];
   const emoji = MOOD_EMOJIS[step];
@@ -216,11 +217,21 @@ function MoodCard({
     }),
   ).current;
 
-  // 이전 날: 5개 이모지 한번에 표시, 선택한 것 강조
+  // 이전 날: 5개 이모지 한번에 표시, 선택한 것 강조 / 펼치면 증상 버튼도 표시
   if (!isToday) {
     return (
       <View style={styles.moodCard}>
-        <Text style={styles.moodTitle}>{dateLabel}의 기분</Text>
+        <View style={styles.moodPastTitleRow}>
+          <Text style={styles.moodTitle}>{dateLabel}의 기분</Text>
+          <Pressable style={styles.moodExpandBtn} onPress={() => setExpanded((v) => !v)}>
+            <ChevronDown
+              color="#9096A2"
+              size={18}
+              strokeWidth={2.4}
+              style={{ transform: [{ rotate: expanded ? "180deg" : "0deg" }] }}
+            />
+          </Pressable>
+        </View>
         <View style={styles.moodPastRow}>
           {MOOD_EMOJIS.map((e, i) => {
             const selected = hasMoodRecord && i === step;
@@ -242,6 +253,30 @@ function MoodCard({
             );
           })}
         </View>
+        {expanded && (
+          <>
+            <View style={styles.moodDivider} />
+            <View style={styles.moodAvatarRow}>
+              {([
+                { label: "불안", emoji: "🌀" },
+                { label: "우울", emoji: "🌧️" },
+                { label: "강박", emoji: "⚡" },
+              ] as const).map(({ label: btnLabel, emoji: btnEmoji }) => (
+                <Pressable
+                  key={btnLabel}
+                  style={styles.moodAvatarBtn}
+                  onPress={() => setActiveSymptom(btnLabel)}
+                >
+                  <View style={styles.moodAvatarCircle}>
+                    <Text style={styles.moodAvatarEmoji}>{btnEmoji}</Text>
+                  </View>
+                  <Text style={styles.moodAvatarLabel}>{btnLabel}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </>
+        )}
+        <SymptomSheet symptom={activeSymptom} onClose={() => setActiveSymptom(null)} />
       </View>
     );
   }
@@ -1439,6 +1474,20 @@ const styles = StyleSheet.create({
   },
 
   // 이전 날 기분 (5개 이모지 전체 표시)
+  moodPastTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+  },
+  moodExpandBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#F0EFF8",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   moodPastRow: {
     flexDirection: "row",
     justifyContent: "space-between",
