@@ -232,7 +232,7 @@ export function ReportScreen({
       />
 
       <Text style={styles.sectionTitle}>진료 준비 메모</Text>
-      <View style={styles.panel}>
+      <View style={[styles.panel, { paddingTop: 10, paddingBottom: 10 }]}>
         {summary.map((item, index) => (
           <View
             key={item}
@@ -499,7 +499,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 9,
-    paddingVertical: 7,
+    paddingVertical: 5,
   },
   summaryRowLast: {
     paddingBottom: 0,
