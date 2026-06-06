@@ -177,12 +177,14 @@ const MOOD_EMOJIS = ["😔", "😕", "🌤️", "😊", "🌈"] as const;
 function MoodCard({
   isToday,
   date,
+  hasMoodRecord,
   step,
   onStepChange,
   symptomLogs,
 }: {
   isToday: boolean;
   date: string;
+  hasMoodRecord: boolean;
   step: number;
   onStepChange: (step: number) => void;
   symptomLogs: SymptomLog[];
@@ -193,6 +195,11 @@ function MoodCard({
   const label = MOOD_LEVELS[step];
   const emoji = MOOD_EMOJIS[step];
   const value = step / (MOOD_LEVELS.length - 1);
+
+  const dateLabel = new Intl.DateTimeFormat("ko-KR", {
+    month: "long",
+    day: "numeric",
+  }).format(new Date(`${date}T00:00:00`));
 
   const snapToStep = (x: number) => {
     if (trackWidth.current <= 0) return;
@@ -209,13 +216,40 @@ function MoodCard({
     }),
   ).current;
 
+  // 이전 날: 5개 이모지 한번에 표시, 선택한 것 강조
+  if (!isToday) {
+    return (
+      <View style={styles.moodCard}>
+        <Text style={styles.moodTitle}>{dateLabel}의 기분</Text>
+        <View style={styles.moodPastRow}>
+          {MOOD_EMOJIS.map((e, i) => {
+            const selected = hasMoodRecord && i === step;
+            return (
+              <Pressable
+                key={i}
+                style={styles.moodPastItem}
+                onPress={() => onStepChange(i)}
+              >
+                <View style={[styles.moodPastBubble, selected && styles.moodPastBubbleSelected]}>
+                  <Text style={[styles.moodPastEmoji, selected && styles.moodPastEmojiSelected]}>
+                    {e}
+                  </Text>
+                </View>
+                <Text style={[styles.moodPastLabel, selected && styles.moodPastLabelSelected]}>
+                  {MOOD_LEVELS[i]}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+    );
+  }
+
+  // 오늘: 기존 전체 UI
   return (
     <View style={styles.moodCard}>
-      <Text style={styles.moodTitle}>
-        {isToday
-          ? "오늘 기분이 어때요?"
-          : `${new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric" }).format(new Date(`${date}T00:00:00`))}의 기분`}
-      </Text>
+      <Text style={styles.moodTitle}>오늘 기분이 어때요?</Text>
       <Text style={styles.moodEmoji}>{emoji}</Text>
       <View
         style={styles.moodTrackWrap}
@@ -638,6 +672,7 @@ export function HomeScreen({
       <MoodCard
         isToday={selectedDate === today}
         date={selectedDate}
+        hasMoodRecord={Boolean(selectedMoodLog)}
         step={selectedMoodStep}
         onStepChange={(step) => onSaveMood(selectedDate, step)}
         symptomLogs={selectedDateSymptomLogs}
@@ -1401,5 +1436,50 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "700",
+  },
+
+  // 이전 날 기분 (5개 이모지 전체 표시)
+  moodPastRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    marginTop: 20,
+  },
+  moodPastItem: {
+    flex: 1,
+    alignItems: "center",
+    gap: 6,
+  },
+  moodPastBubble: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#EEEDF8",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  moodPastBubbleSelected: {
+    backgroundColor: "#4025E8",
+    shadowColor: "#4025E8",
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
+  },
+  moodPastEmoji: {
+    fontSize: 24,
+  },
+  moodPastEmojiSelected: {
+    fontSize: 28,
+  },
+  moodPastLabel: {
+    fontSize: 11,
+    color: "#9096A2",
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  moodPastLabelSelected: {
+    color: "#4025E8",
+    fontWeight: "800",
   },
 });
