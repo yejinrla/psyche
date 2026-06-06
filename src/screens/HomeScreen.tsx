@@ -789,40 +789,49 @@ export function HomeScreen({
         </View>
       </Pressable>
 
-      {pastVisits.length > 0 && (
-        <View style={styles.prevVisitCard}>
-          <View style={styles.prevVisitHeader}>
-            <Hospital color="#20212B" size={18} strokeWidth={2.4} />
-            <Text style={styles.prevVisitTitle}>이전 진료 기록</Text>
-          </View>
-          {pastVisits.map((visit, index) => (
-            <View
-              key={visit.id}
-              style={[
-                styles.prevVisitRow,
-                index === pastVisits.length - 1 && styles.prevVisitRowLast,
-              ]}
-            >
-              <View style={styles.prevVisitDateBadge}>
-                <Text style={styles.prevVisitDateText}>
-                  {formatShortDate(visit.date)}
+      {pastVisits.length > 0 && (() => {
+        const visit = pastVisits[0];
+        return (
+          <View style={styles.nextVisitCard}>
+            <View style={styles.nextVisitHeader}>
+              <View style={styles.nextVisitTitleBlock}>
+                <View style={styles.nextVisitTitleRow}>
+                  <Hospital color="#20212B" size={20} strokeWidth={2.4} />
+                  <Text style={styles.nextVisitHospital}>이전 진료 기록</Text>
+                </View>
+              </View>
+              {visit.outcomes.length > 0 && (
+                <View style={styles.nextVisitDdayBadge}>
+                  <Text style={styles.nextVisitDdayText} numberOfLines={1}>
+                    {visit.outcomes[0]}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <View style={styles.nextVisitInfoList}>
+              <View style={styles.nextVisitInfoRow}>
+                <Clock color="#9A9AA7" size={15} strokeWidth={2.4} />
+                <Text style={styles.nextVisitInfoText}>
+                  <Text style={styles.nextVisitInfoMuted}>
+                    {toDotMonthDay(visit.date)}
+                    {visit.time ? " · " : ""}
+                  </Text>
+                  {visit.time ? (
+                    <Text style={styles.nextVisitInfoStrong}>{visit.time}</Text>
+                  ) : null}
                 </Text>
               </View>
-              <View style={styles.prevVisitInfo}>
-                <Text style={styles.prevVisitHospital} numberOfLines={1}>
+              <View style={styles.nextVisitInfoRow}>
+                <MapPin color="#9A9AA7" size={15} strokeWidth={2.4} />
+                <Text style={styles.nextVisitInfoText}>
                   {visit.hospitalName}
                   {visit.doctorName ? ` · ${visit.doctorName}` : ""}
                 </Text>
-                {visit.outcomes.length > 0 && (
-                  <Text style={styles.prevVisitOutcome} numberOfLines={1}>
-                    {visit.outcomes.join(" · ")}
-                  </Text>
-                )}
               </View>
             </View>
-          ))}
-        </View>
-      )}
+          </View>
+        );
+      })()}
     </ScrollView>
   );
 }
