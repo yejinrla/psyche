@@ -176,11 +176,13 @@ const MOOD_EMOJIS = ["😔", "😕", "🌤️", "😊", "🌈"] as const;
 
 function MoodCard({
   isToday,
+  date,
   step,
   onStepChange,
   symptomLogs,
 }: {
   isToday: boolean;
+  date: string;
   step: number;
   onStepChange: (step: number) => void;
   symptomLogs: SymptomLog[];
@@ -210,7 +212,9 @@ function MoodCard({
   return (
     <View style={styles.moodCard}>
       <Text style={styles.moodTitle}>
-        {isToday ? "오늘 기분이 어때요?" : "이날 기분이 어땠나요?"}
+        {isToday
+          ? "오늘 기분이 어때요?"
+          : `${new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric" }).format(new Date(`${date}T00:00:00`))}의 기분`}
       </Text>
       <Text style={styles.moodEmoji}>{emoji}</Text>
       <View
@@ -633,6 +637,7 @@ export function HomeScreen({
 
       <MoodCard
         isToday={selectedDate === today}
+        date={selectedDate}
         step={selectedMoodStep}
         onStepChange={(step) => onSaveMood(selectedDate, step)}
         symptomLogs={selectedDateSymptomLogs}
