@@ -65,12 +65,15 @@ export function NextVisitScreen({
     >
       <Pressable style={styles.overlay} onPress={onClose}>
       <Pressable style={styles.container} onPress={() => {}}>
-        {/* 상단 닫기 바 */}
+        {/* 상단 바 */}
         <View style={styles.topBar}>
           <View style={styles.topBarSpacer} />
-          <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={8}>
-            <Text style={styles.closeBtnText}>✕</Text>
-          </Pressable>
+          <View style={styles.topBarHandle} />
+          <View style={styles.topBarSpacer}>
+            <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={8}>
+              <Text style={styles.closeBtnText}>✕</Text>
+            </Pressable>
+          </View>
         </View>
 
         <ScrollView
@@ -207,12 +210,20 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "flex-end",
     paddingHorizontal: 16,
     paddingTop: 14,
-    paddingBottom: 4,
+    paddingBottom: 8,
   },
-  topBarSpacer: { flex: 1 },
+  topBarSpacer: {
+    flex: 1,
+    alignItems: "flex-end",
+  },
+  topBarHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#DDD9F8",
+  },
   closeBtn: {
     width: 30,
     height: 30,
