@@ -61,10 +61,13 @@ export function NextVisitScreen({
     <Modal
       visible={visible}
       animationType="slide"
-      presentationStyle="pageSheet"
+      transparent
       onRequestClose={onClose}
     >
+      <View style={styles.overlay}>
       <View style={styles.container}>
+        {/* 핸들 */}
+        <View style={styles.handleBar} />
         {/* 헤더 */}
         <View style={styles.header}>
           <Pressable style={styles.backBtn} onPress={onClose} hitSlop={8}>
@@ -185,24 +188,44 @@ export function NextVisitScreen({
           </View>
         </ScrollView>
       </View>
+      </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  overlay: {
     flex: 1,
+    backgroundColor: "rgba(0,0,0,0.3)",
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  container: {
+    width: "100%",
+    maxWidth: 390,
+    height: "92%",
     backgroundColor: "#F7F6FB",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: "hidden",
+  },
+  handleBar: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "#DDD9F8",
+    alignSelf: "center",
+    marginTop: 12,
+    marginBottom: 4,
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#EEEDF8",
-    backgroundColor: "#F7F6FB",
   },
   backBtn: {
     width: 36,
