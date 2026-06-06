@@ -800,13 +800,11 @@ export function HomeScreen({
                   <Text style={styles.nextVisitHospital}>이전 진료 기록</Text>
                 </View>
               </View>
-              {visit.outcomes.length > 0 && (
-                <View style={styles.nextVisitDdayBadge}>
-                  <Text style={styles.nextVisitDdayText} numberOfLines={1}>
-                    {visit.outcomes[0]}
-                  </Text>
-                </View>
-              )}
+              <View style={styles.nextVisitDdayBadge}>
+                <Text style={styles.nextVisitDdayText}>
+                  D+{Math.abs(daysUntil(visit.date))}
+                </Text>
+              </View>
             </View>
             <View style={styles.nextVisitInfoList}>
               <View style={styles.nextVisitInfoRow}>
