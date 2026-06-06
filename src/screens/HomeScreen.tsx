@@ -1503,13 +1503,12 @@ const styles = StyleSheet.create({
   anxietyIntensityRow: {
     flexDirection: "row",
     alignItems: "flex-end",
-    justifyContent: "space-between",
-    paddingHorizontal: 4,
+    justifyContent: "center",
+    gap: 16,
     marginBottom: 4,
     height: 80,
   },
   anxietyIntensityCell: {
-    flex: 1,
     alignItems: "center",
     justifyContent: "flex-end",
   },
