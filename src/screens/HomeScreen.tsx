@@ -123,15 +123,30 @@ function SymptomSheet({ symptom, onClose }: { symptom: string | null; onClose: (
 
           <Text style={styles.anxietySheetSectionLabel}>{symptom} 강도</Text>
           <View style={styles.anxietyIntensityRow}>
-            {[1, 2, 3, 4, 5].map((n) => (
-              <Pressable
-                key={n}
-                style={[styles.anxietyIntensityBtn, intensity === n && styles.anxietyIntensityBtnActive]}
-                onPress={() => setIntensity(n)}
-              >
-                <Text style={[styles.anxietyIntensityNum, intensity === n && styles.anxietyIntensityNumActive]}>{n}</Text>
-              </Pressable>
-            ))}
+            {[1, 2, 3, 4, 5].map((n) => {
+              const size = 20 + n * 10;
+              const active = intensity === n;
+              return (
+                <Pressable
+                  key={n}
+                  style={styles.anxietyIntensityCell}
+                  onPress={() => setIntensity(n)}
+                >
+                  <View
+                    style={[
+                      styles.anxietyCircle,
+                      {
+                        width: size,
+                        height: size,
+                        borderRadius: size / 2,
+                        backgroundColor: active ? "#4025E8" : "#F0EFF8",
+                        borderColor: active ? "#4025E8" : "#DDD9F8",
+                      },
+                    ]}
+                  />
+                </Pressable>
+              );
+            })}
           </View>
           <View style={styles.anxietyIntensityScale}>
             <Text style={styles.anxietyScaleLabel}>거의 없음</Text>
@@ -1487,30 +1502,18 @@ const styles = StyleSheet.create({
   },
   anxietyIntensityRow: {
     flexDirection: "row",
-    gap: 8,
-    marginBottom: 4,
-  },
-  anxietyIntensityBtn: {
-    flex: 1,
-    height: 44,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: "#E1E0EE",
-    alignItems: "center",
+    alignItems: "flex-end",
     justifyContent: "center",
-    backgroundColor: "#F7F7FB",
+    gap: 16,
+    marginBottom: 4,
+    height: 80,
   },
-  anxietyIntensityBtnActive: {
-    borderColor: "#4025E8",
-    backgroundColor: "#EBE8FD",
+  anxietyIntensityCell: {
+    alignItems: "center",
+    justifyContent: "flex-end",
   },
-  anxietyIntensityNum: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#999",
-  },
-  anxietyIntensityNumActive: {
-    color: "#4025E8",
+  anxietyCircle: {
+    borderWidth: 2,
   },
   anxietyIntensityScale: {
     flexDirection: "row",
