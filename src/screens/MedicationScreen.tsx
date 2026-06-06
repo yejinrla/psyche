@@ -25,10 +25,10 @@ import type { DailyMedicationInfo, Medication, MedicationEvent, ModalKind, Psych
 
 const shadow = Platform.select({
   ios: {
-    shadowColor: "#1F2933",
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
+    shadowColor: "#4025E8",
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
   },
   android: { elevation: 2 },
   default: {},
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   medPanel: {
-    borderRadius: 8,
+    borderRadius: 16,
     backgroundColor: theme.surface,
     padding: 16,
     gap: 12,
@@ -311,14 +311,14 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   timelinePanel: {
-    borderRadius: 8,
+    borderRadius: 16,
     backgroundColor: theme.surface,
     paddingVertical: 6,
     overflow: "hidden",
     ...shadow,
   },
   archivedRow: {
-    borderRadius: 8,
+    borderRadius: 16,
     backgroundColor: theme.surface,
     padding: 14,
     gap: 6,

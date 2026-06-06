@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import {
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -315,6 +316,17 @@ export function RecordsScreen({
   );
 }
 
+const cardShadow = Platform.select({
+  ios: {
+    shadowColor: "#4025E8",
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  android: { elevation: 2 },
+  default: {},
+});
+
 const styles = StyleSheet.create({
   screenContent: {
     paddingHorizontal: 10,
@@ -330,7 +342,7 @@ const styles = StyleSheet.create({
   },
   fullWidthAction: {
     minHeight: 48,
-    borderRadius: 8,
+    borderRadius: 14,
     backgroundColor: theme.teal,
     flexDirection: "row",
     alignItems: "center",
@@ -343,10 +355,11 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
   recordPanel: {
-    borderRadius: 8,
+    borderRadius: 16,
     backgroundColor: theme.surface,
     padding: 16,
     gap: 10,
+    ...cardShadow,
   },
   rowBetween: {
     flexDirection: "row",
@@ -392,7 +405,7 @@ const styles = StyleSheet.create({
   staticChip: {
     minHeight: 28,
     paddingHorizontal: 9,
-    borderRadius: 8,
+    borderRadius: 10,
     backgroundColor: theme.blueSoft,
     alignItems: "center",
     justifyContent: "center",

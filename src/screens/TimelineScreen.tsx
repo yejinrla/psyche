@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import {
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -128,6 +129,17 @@ export function TimelineScreen({ timeline }: { timeline: TimelineItem[] }) {
   );
 }
 
+const cardShadow = Platform.select({
+  ios: {
+    shadowColor: "#4025E8",
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  android: { elevation: 2 },
+  default: {},
+});
+
 const styles = StyleSheet.create({
   homeContent: {
     paddingHorizontal: 10,
@@ -229,8 +241,7 @@ const styles = StyleSheet.create({
   tlGroup: {
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#EBEBF0",
     overflow: "hidden",
+    ...cardShadow,
   },
 });
