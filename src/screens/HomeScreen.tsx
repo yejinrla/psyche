@@ -125,16 +125,16 @@ function SymptomSheet({ symptom, onClose }: { symptom: string | null; onClose: (
           <View style={styles.eqContainer}>
             <View style={styles.eqBarRow}>
               {([
-                { color: "#4CD964", height: 18 },
+                { color: "#4CD964", height: 12 },
+                { color: "#6DC94A", height: 20 },
                 { color: "#8BC34A", height: 28 },
-                { color: "#CDDC39", height: 38 },
-                { color: "#FFC107", height: 50 },
-                { color: "#FF9500", height: 62 },
-                { color: "#FF6B35", height: 50 },
-                { color: "#FF3B30", height: 62 },
-                { color: "#D50000", height: 74 },
-                { color: "#B71C1C", height: 74 },
-                { color: "#7F0000", height: 74 },
+                { color: "#CDDC39", height: 36 },
+                { color: "#FFC107", height: 44 },
+                { color: "#FF9500", height: 52 },
+                { color: "#FF6B35", height: 60 },
+                { color: "#FF3B30", height: 68 },
+                { color: "#D50000", height: 76 },
+                { color: "#7F0000", height: 84 },
               ] as const).map(({ color, height }, i) => {
                 const level = Math.ceil((i + 1) / 2); // 1~5
                 const filled = intensity !== null && (i + 1) <= (intensity * 2);
@@ -1524,7 +1524,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "space-between",
-    height: 80,
+    height: 96,
     paddingHorizontal: 2,
   },
   eqBarWrap: {
