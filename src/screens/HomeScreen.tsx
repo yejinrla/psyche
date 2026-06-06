@@ -8,7 +8,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { Bell, ChevronDown, Clock, Hospital, MapPin, Pill } from "lucide-react-native";
+import { Bell, ChevronDown, ChevronUp, Clock, Hospital, MapPin, Pill } from "lucide-react-native";
 import { ButterflyIcon } from "../components/ButterflyIcon";
 import { theme } from "../constants";
 import { latestAppointment } from "../utils/analytics";
@@ -208,12 +208,10 @@ function MoodCard({
         <View style={styles.moodPastTitleRow}>
           <Text style={styles.moodTitle}>{dateLabel}의 기분</Text>
           <Pressable style={styles.moodExpandBtn} onPress={() => setExpanded((v) => !v)}>
-            <ChevronDown
-              color="#9096A2"
-              size={18}
-              strokeWidth={2.4}
-              style={{ transform: [{ rotate: expanded ? "180deg" : "0deg" }] }}
-            />
+            {expanded
+              ? <ChevronUp color="#9096A2" size={18} strokeWidth={2.4} />
+              : <ChevronDown color="#9096A2" size={18} strokeWidth={2.4} />
+            }
           </Pressable>
         </View>
         <View style={styles.moodPastRow}>
