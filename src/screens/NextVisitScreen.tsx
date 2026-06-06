@@ -59,15 +59,15 @@ export function NextVisitScreen({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType="fade"
       transparent
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
-      <View style={styles.container}>
-        {/* 핸들 */}
-        <Pressable style={styles.handleArea} onPress={onClose}>
-          <View style={styles.handleBar} />
+      <Pressable style={styles.overlay} onPress={onClose}>
+      <Pressable style={styles.container} onPress={() => {}}>
+        {/* 닫기 버튼 */}
+        <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={8}>
+          <Text style={styles.closeBtnText}>✕</Text>
         </Pressable>
 
         <ScrollView
@@ -189,34 +189,37 @@ export function NextVisitScreen({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.3)",
+    backgroundColor: "rgba(0,0,0,0.4)",
     alignItems: "center",
-    justifyContent: "flex-end",
+    justifyContent: "center",
   },
   container: {
-    width: "100%",
-    maxWidth: 390,
-    height: "92%",
+    width: "90%",
+    maxWidth: 360,
+    maxHeight: "85%",
     backgroundColor: "#F7F6FB",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderRadius: 24,
     overflow: "hidden",
   },
-  handleArea: {
+  closeBtn: {
+    position: "absolute",
+    top: 14,
+    right: 16,
+    zIndex: 10,
+    width: 28,
+    height: 28,
     alignItems: "center",
-    paddingTop: 12,
-    paddingBottom: 8,
+    justifyContent: "center",
   },
-  handleBar: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#DDD9F8",
+  closeBtnText: {
+    fontSize: 16,
+    color: "#9096A2",
+    fontWeight: "600",
   },
   content: {
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 40,
+    paddingTop: 48,
+    paddingBottom: 32,
     gap: 14,
   },
   flex1: { flex: 1 },
