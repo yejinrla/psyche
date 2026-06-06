@@ -235,22 +235,6 @@ function MoodCard({
 
       <View style={styles.moodDivider} />
 
-      <View style={styles.dayRecordBox}>
-        <Text style={styles.dayRecordTitle}>이날 증상 기록</Text>
-        {symptomLogs.length > 0 ? (
-          symptomLogs.slice(0, 2).map((log) => (
-            <Text key={log.id} style={styles.dayRecordText} numberOfLines={1}>
-              {log.symptom} · 강도 {log.level}/5
-              {log.memo ? ` · ${log.memo}` : ""}
-            </Text>
-          ))
-        ) : (
-          <Text style={styles.dayRecordTextMuted}>
-            이 날짜에 기록된 증상이 없어요.
-          </Text>
-        )}
-      </View>
-
       <View style={styles.moodAvatarRow}>
         {([
           { label: "불안", emoji: "🌀" },
