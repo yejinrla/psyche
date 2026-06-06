@@ -65,10 +65,13 @@ export function NextVisitScreen({
     >
       <Pressable style={styles.overlay} onPress={onClose}>
       <Pressable style={styles.container} onPress={() => {}}>
-        {/* 닫기 버튼 */}
-        <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={8}>
-          <Text style={styles.closeBtnText}>✕</Text>
-        </Pressable>
+        {/* 상단 닫기 바 */}
+        <View style={styles.topBar}>
+          <View style={styles.topBarSpacer} />
+          <Pressable style={styles.closeBtn} onPress={onClose} hitSlop={8}>
+            <Text style={styles.closeBtnText}>✕</Text>
+          </Pressable>
+        </View>
 
         <ScrollView
           contentContainerStyle={styles.content}
@@ -201,24 +204,31 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     overflow: "hidden",
   },
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 4,
+  },
+  topBarSpacer: { flex: 1 },
   closeBtn: {
-    position: "absolute",
-    top: 14,
-    right: 16,
-    zIndex: 10,
-    width: 28,
-    height: 28,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "#F0EFF8",
     alignItems: "center",
     justifyContent: "center",
   },
   closeBtnText: {
-    fontSize: 16,
+    fontSize: 14,
     color: "#9096A2",
-    fontWeight: "600",
+    fontWeight: "700",
   },
   content: {
     paddingHorizontal: 20,
-    paddingTop: 48,
+    paddingTop: 8,
     paddingBottom: 32,
     gap: 14,
   },
