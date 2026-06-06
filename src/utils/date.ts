@@ -22,7 +22,7 @@ export const formatFullDate = (date: string) => {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-    weekday: 'short',
+    weekday: 'long',
   }).format(parsed);
 };
 

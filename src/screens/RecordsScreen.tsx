@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
     color: theme.muted,
     fontSize: 12,
     lineHeight: 18,
-    marginTop: 4,
+    marginTop: 2,
     fontWeight: "600",
   },
   recordTypeText: {
