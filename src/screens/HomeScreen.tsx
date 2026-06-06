@@ -190,6 +190,7 @@ function MoodCard({
 }) {
   const [activeSymptom, setActiveSymptom] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
+  const [moodNote, setMoodNote] = useState("");
 
   const label = MOOD_LEVELS[step];
   const emoji = MOOD_EMOJIS[step];
@@ -302,6 +303,15 @@ function MoodCard({
         </View>
       </View>
       <Text style={styles.moodLabel}>{label}</Text>
+
+      <TextInput
+        style={styles.moodNoteInput}
+        placeholder="오늘 기분이 이런 이유가 있나요?"
+        placeholderTextColor="#B2B3C4"
+        value={moodNote}
+        onChangeText={setMoodNote}
+        multiline
+      />
 
       <View style={styles.moodDivider} />
 
@@ -964,6 +974,21 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     marginTop: 6,
     textAlign: "center",
+  },
+  moodNoteInput: {
+    width: "100%",
+    marginTop: 14,
+    borderWidth: 1.5,
+    borderColor: "#E1E0EE",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    fontSize: 14,
+    color: "#20212B",
+    backgroundColor: "#FFFFFF",
+    minHeight: 48,
+    textAlignVertical: "top",
+    fontWeight: "500",
   },
   moodDivider: {
     height: 1,
