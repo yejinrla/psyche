@@ -175,6 +175,7 @@ const MOOD_EMOJIS = ["😔", "😕", "🌤️", "😊", "🌈"] as const;
 
 function MoodCard({
   isToday,
+  isFuture,
   date,
   hasMoodRecord,
   step,
@@ -182,6 +183,7 @@ function MoodCard({
   symptomLogs,
 }: {
   isToday: boolean;
+  isFuture: boolean;
   date: string;
   hasMoodRecord: boolean;
   step: number;
@@ -200,6 +202,17 @@ function MoodCard({
     month: "long",
     day: "numeric",
   }).format(new Date(`${date}T00:00:00`));
+
+  // 미래: 선택 불가 안내
+  if (isFuture) {
+    return (
+      <View style={[styles.moodCard, styles.moodCardFuture]}>
+        <Text style={styles.moodFutureEmoji}>🌙</Text>
+        <Text style={styles.moodFutureTitle}>아직 오지 않은 날이에요</Text>
+        <Text style={styles.moodFutureSub}>{dateLabel}의 기록은{"\n"}그날이 되면 남길 수 있어요</Text>
+      </View>
+    );
+  }
 
   // 이전 날: 5개 이모지 한번에 표시, 선택한 것 강조 / 펼치면 증상 버튼도 표시
   if (!isToday) {
@@ -670,38 +683,45 @@ export function HomeScreen({
         </View>
         <Text style={styles.morningTitle}>{formatHomeTitle(selectedDate)}</Text>
         <View style={styles.weekStrip}>
-          {weekDays.map((day) => (
-            <Pressable
-              key={day.key}
-              style={[
-                styles.weekItem,
-                day.date === selectedDate && styles.weekItemActive,
-              ]}
-              onPress={() => setSelectedDate(day.date)}
-            >
-              <Text
+          {weekDays.map((day) => {
+            const isFuture = day.date > today;
+            return (
+              <Pressable
+                key={day.key}
                 style={[
-                  styles.weekName,
-                  day.date === selectedDate && styles.weekNameActive,
+                  styles.weekItem,
+                  day.date === selectedDate && styles.weekItemActive,
+                  isFuture && styles.weekItemFuture,
                 ]}
+                onPress={() => !isFuture && setSelectedDate(day.date)}
               >
-                {day.name}
-              </Text>
-              <Text
-                style={[
-                  styles.weekNumber,
-                  day.date === selectedDate && styles.weekNumberActive,
-                ]}
-              >
-                {day.day}
-              </Text>
-            </Pressable>
-          ))}
+                <Text
+                  style={[
+                    styles.weekName,
+                    day.date === selectedDate && styles.weekNameActive,
+                    isFuture && styles.weekNameFuture,
+                  ]}
+                >
+                  {day.name}
+                </Text>
+                <Text
+                  style={[
+                    styles.weekNumber,
+                    day.date === selectedDate && styles.weekNumberActive,
+                    isFuture && styles.weekNumberFuture,
+                  ]}
+                >
+                  {day.day}
+                </Text>
+              </Pressable>
+            );
+          })}
         </View>
       </View>
 
       <MoodCard
         isToday={selectedDate === today}
+        isFuture={selectedDate > today}
         date={selectedDate}
         hasMoodRecord={Boolean(selectedMoodLog)}
         step={selectedMoodStep}
@@ -862,6 +882,9 @@ const styles = StyleSheet.create({
   weekItemActive: {
     backgroundColor: "#4025E8",
   },
+  weekItemFuture: {
+    opacity: 0.35,
+  },
   weekName: {
     color: "#B2B3BA",
     fontSize: 10,
@@ -872,6 +895,9 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "700",
   },
+  weekNameFuture: {
+    color: "#C8C9D0",
+  },
   weekNumber: {
     color: "#B2B3BA",
     fontSize: 12,
@@ -881,6 +907,9 @@ const styles = StyleSheet.create({
   weekNumberActive: {
     color: "#fff",
     fontWeight: "800",
+  },
+  weekNumberFuture: {
+    color: "#C8C9D0",
   },
   moodCard: {
     borderRadius: 24,
@@ -903,6 +932,28 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     textAlign: "center",
     letterSpacing: 0,
+  },
+  moodCardFuture: {
+    alignItems: "center",
+    paddingVertical: 36,
+    gap: 8,
+  },
+  moodFutureEmoji: {
+    fontSize: 40,
+  },
+  moodFutureTitle: {
+    color: "#9096A2",
+    fontSize: 16,
+    fontWeight: "800",
+    textAlign: "center",
+    marginTop: 4,
+  },
+  moodFutureSub: {
+    color: "#B2B3C4",
+    fontSize: 13,
+    fontWeight: "500",
+    textAlign: "center",
+    lineHeight: 20,
   },
   moodEmoji: {
     fontSize: 56,
