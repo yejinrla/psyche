@@ -123,27 +123,18 @@ function SymptomSheet({ symptom, onClose }: { symptom: string | null; onClose: (
 
           <Text style={styles.anxietySheetSectionLabel}>{symptom} 강도</Text>
           <View style={styles.anxietyIntensityRow}>
-            {[1, 2, 3, 4, 5].map((n) => {
-              const size = 20 + n * 10;
+            {(["😌", "😟", "😰", "😨", "😱"] as const).map((emoji, i) => {
+              const n = i + 1;
               const active = intensity === n;
               return (
                 <Pressable
                   key={n}
-                  style={styles.anxietyIntensityCell}
+                  style={[styles.anxietyIntensityCell, active && styles.anxietyIntensityCellActive]}
                   onPress={() => setIntensity(n)}
                 >
-                  <View
-                    style={[
-                      styles.anxietyCircle,
-                      {
-                        width: size,
-                        height: size,
-                        borderRadius: size / 2,
-                        backgroundColor: active ? "#4025E8" : "#F0EFF8",
-                        borderColor: active ? "#4025E8" : "#DDD9F8",
-                      },
-                    ]}
-                  />
+                  <Text style={[styles.anxietyIntensityEmoji, active && styles.anxietyIntensityEmojiActive]}>
+                    {emoji}
+                  </Text>
                 </Pressable>
               );
             })}
@@ -1502,18 +1493,28 @@ const styles = StyleSheet.create({
   },
   anxietyIntensityRow: {
     flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "center",
-    gap: 16,
+    gap: 8,
     marginBottom: 4,
-    height: 80,
   },
   anxietyIntensityCell: {
+    flex: 1,
+    height: 56,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: "#E1E0EE",
     alignItems: "center",
-    justifyContent: "flex-end",
+    justifyContent: "center",
+    backgroundColor: "#F7F7FB",
   },
-  anxietyCircle: {
-    borderWidth: 2,
+  anxietyIntensityCellActive: {
+    borderColor: "#4025E8",
+    backgroundColor: "#EBE8FD",
+  },
+  anxietyIntensityEmoji: {
+    fontSize: 24,
+  },
+  anxietyIntensityEmojiActive: {
+    fontSize: 28,
   },
   anxietyIntensityScale: {
     flexDirection: "row",
