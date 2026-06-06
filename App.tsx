@@ -6,6 +6,7 @@ import { theme } from "./src/constants";
 import { usePsycheData } from "./src/hooks/usePsycheData";
 import type { DailyMedicationInfo, Medication, ModalKind, TabKey } from "./src/types";
 import { buildTimeline } from "./src/utils/analytics";
+import { todayISO as getTodayISO } from "./src/utils/date";
 
 import { BottomTabBar } from "./src/components/BottomTabBar";
 
@@ -19,6 +20,7 @@ import { MedicationInfoDialog } from "./src/screens/MedicationInfoScreen";
 import { MedicationReminderDialog } from "./src/screens/MedicationReminderScreen";
 import { AppointmentReminderDialog } from "./src/screens/AppointmentReminderScreen";
 import { NotificationDialog } from "./src/screens/NotificationScreen";
+import { NextVisitScreen } from "./src/screens/NextVisitScreen";
 
 export default function App() {
   const actions = usePsycheData();
@@ -30,9 +32,22 @@ export default function App() {
   const [reminderVisible, setReminderVisible] = useState(false);
   const [appointmentReminderVisible, setAppointmentReminderVisible] = useState(false);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
+  const [nextVisitVisible, setNextVisitVisible] = useState(false);
 
   const goHome = () => setActiveTab("home");
   const openNotifications = () => setNotificationsVisible(true);
+
+  const today = getTodayISO();
+  const nextAppointmentVisit = useMemo(() => {
+    const candidates = actions.data.visits
+      .flatMap((v) =>
+        v.nextAppointment
+          ? [{ hospitalName: v.hospitalName, doctorName: v.doctorName, appointment: v.nextAppointment }]
+          : [],
+      )
+      .sort((a, b) => a.appointment.date.localeCompare(b.appointment.date));
+    return candidates.find(({ appointment }) => appointment.date >= today);
+  }, [actions.data.visits]);
 
   const timeline = useMemo(() => buildTimeline(actions.data), [actions.data]);
 
@@ -51,6 +66,7 @@ export default function App() {
             }
             onOpenMedicationInfo={setMedicationInfo}
             onOpenNotifications={openNotifications}
+            onOpenNextVisit={() => setNextVisitVisible(true)}
           />
         );
       case "records":
@@ -88,7 +104,6 @@ export default function App() {
           <ReportScreen
             data={actions.data}
             openModal={openModal}
-            toggleQuestion={actions.toggleQuestion}
             onOpenMedicationReminder={() => setReminderVisible(true)}
             onOpenAppointmentReminder={() => setAppointmentReminderVisible(true)}
             onGoHome={goHome}
@@ -135,6 +150,17 @@ export default function App() {
         visible={notificationsVisible}
         data={actions.data}
         onClose={() => setNotificationsVisible(false)}
+      />
+      <NextVisitScreen
+        visible={nextVisitVisible}
+        data={actions.data}
+        appointmentDate={nextAppointmentVisit?.appointment.date}
+        appointmentTime={nextAppointmentVisit?.appointment.time}
+        hospitalName={nextAppointmentVisit?.hospitalName}
+        doctorName={nextAppointmentVisit?.doctorName}
+        openModal={openModal}
+        toggleQuestion={actions.toggleQuestion}
+        onClose={() => setNextVisitVisible(false)}
       />
     </SafeAreaView>
   );

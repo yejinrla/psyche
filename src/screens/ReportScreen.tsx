@@ -10,7 +10,6 @@ import {
 import {
   Bell,
   CalendarDays,
-  CheckCircle2,
   ChevronRight,
   Hospital,
   Pill,
@@ -22,7 +21,6 @@ import { ButterflyIcon } from "../components/ButterflyIcon";
 import { theme } from "../constants";
 import {
   activeMedications,
-  generateVisitPrepSummary,
   recentSymptomAverage,
   sideEffectFrequency,
   symptomFrequency,
@@ -108,7 +106,6 @@ function FrequencyList({
 export function ReportScreen({
   data,
   openModal,
-  toggleQuestion,
   onOpenMedicationReminder,
   onOpenAppointmentReminder,
   onGoHome,
@@ -116,13 +113,11 @@ export function ReportScreen({
 }: {
   data: PsycheData;
   openModal: (kind: Exclude<ModalKind, null>) => void;
-  toggleQuestion: PsycheDataActions["toggleQuestion"];
   onOpenMedicationReminder: () => void;
   onOpenAppointmentReminder: () => void;
   onGoHome?: () => void;
   onOpenNotifications?: () => void;
 }) {
-  const summary = generateVisitPrepSummary(data);
   const symptoms = sortByDateAsc(data.symptomLogs).slice(-7);
   const sideEffects = sideEffectFrequency(data, 30);
   const symptomCounts = symptomFrequency(data, 30);
@@ -230,58 +225,6 @@ export function ReportScreen({
         rows={symptomCounts}
         emptyLabel="최근 30일 증상 기록이 없습니다."
       />
-
-      <Text style={styles.sectionTitle}>진료 준비 메모</Text>
-      <View style={[styles.panel, { paddingTop: 10, paddingBottom: 10 }]}>
-        {summary.map((item, index) => (
-          <View
-            key={item}
-            style={[styles.summaryRow, index === summary.length - 1 && styles.summaryRowLast]}
-          >
-            <CheckCircle2 color="#4025E8" size={17} strokeWidth={2.4} />
-            <Text style={styles.summaryText}>{item}</Text>
-          </View>
-        ))}
-      </View>
-
-      <SectionHeader
-        title="의사에게 물어볼 질문"
-        actionLabel="질문 추가"
-        onAction={() => openModal("question")}
-      />
-      <View style={styles.listStack}>
-        {data.questions.map((question) => (
-          <Pressable
-            key={question.id}
-            style={styles.questionRow}
-            onPress={() => toggleQuestion(question.id)}
-          >
-            <View
-              style={[
-                styles.questionCheck,
-                question.resolved && styles.questionCheckDone,
-              ]}
-            >
-              {question.resolved ? (
-                <CheckCircle2 color="#fff" size={16} strokeWidth={2.5} />
-              ) : null}
-            </View>
-            <View style={styles.flex1}>
-              <Text
-                style={[
-                  styles.questionText,
-                  question.resolved && styles.questionTextDone,
-                ]}
-              >
-                {question.text}
-              </Text>
-              <Text style={styles.itemMeta}>
-                {formatShortDate(question.createdAt)}
-              </Text>
-            </View>
-          </Pressable>
-        ))}
-      </View>
 
       <Text style={styles.sectionTitle}>설정</Text>
       <Pressable style={styles.settingRow} onPress={onOpenMedicationReminder}>

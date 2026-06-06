@@ -610,6 +610,7 @@ export function HomeScreen({
   onSaveSleep,
   onOpenMedicationInfo,
   onOpenNotifications,
+  onOpenNextVisit,
 }: {
   data: PsycheData;
   openModal: (kind: Exclude<ModalKind, null>) => void;
@@ -617,6 +618,7 @@ export function HomeScreen({
   onSaveSleep: (date: string, sleep: SleepDraft) => void;
   onOpenMedicationInfo: (medication: DailyMedicationInfo) => void;
   onOpenNotifications?: () => void;
+  onOpenNextVisit?: () => void;
 }) {
   const today = todayISOUtil();
   const [selectedDate, setSelectedDate] = useState(today);
@@ -748,7 +750,7 @@ export function HomeScreen({
 
       <Pressable
         style={styles.nextVisitCard}
-        onPress={() => openModal("visit")}
+        onPress={onOpenNextVisit}
       >
         <View style={styles.nextVisitHeader}>
           <View style={styles.nextVisitTitleBlock}>
