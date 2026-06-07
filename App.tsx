@@ -122,6 +122,17 @@ export default function App() {
         <View style={styles.screen}>{renderScreen()}</View>
         <BottomTabBar activeTab={activeTab} onChange={setActiveTab} />
       </View>
+      <NextVisitScreen
+        visible={nextVisitVisible}
+        data={actions.data}
+        appointmentDate={nextAppointmentVisit?.appointment.date}
+        appointmentTime={nextAppointmentVisit?.appointment.time}
+        hospitalName={nextAppointmentVisit?.hospitalName}
+        doctorName={nextAppointmentVisit?.doctorName}
+        openModal={openModal}
+        toggleQuestion={actions.toggleQuestion}
+        onClose={() => setNextVisitVisible(false)}
+      />
       <EntryModal
         kind={modalKind}
         actions={actions}
@@ -150,17 +161,6 @@ export default function App() {
         visible={notificationsVisible}
         data={actions.data}
         onClose={() => setNotificationsVisible(false)}
-      />
-      <NextVisitScreen
-        visible={nextVisitVisible}
-        data={actions.data}
-        appointmentDate={nextAppointmentVisit?.appointment.date}
-        appointmentTime={nextAppointmentVisit?.appointment.time}
-        hospitalName={nextAppointmentVisit?.hospitalName}
-        doctorName={nextAppointmentVisit?.doctorName}
-        openModal={openModal}
-        toggleQuestion={actions.toggleQuestion}
-        onClose={() => setNextVisitVisible(false)}
       />
     </SafeAreaView>
   );
