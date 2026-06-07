@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 import {
   Modal,
   Platform,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import {
@@ -17,7 +18,7 @@ import {
 } from "lucide-react-native";
 import { generateVisitPrepSummary } from "../utils/analytics";
 import { daysUntil } from "../utils/date";
-import type { ModalKind, PsycheData } from "../types";
+import type { PsycheData } from "../types";
 import type { PsycheDataActions } from "../hooks/usePsycheData";
 
 const shadow = Platform.select({
@@ -38,7 +39,7 @@ export function NextVisitScreen({
   appointmentTime,
   hospitalName,
   doctorName,
-  openModal,
+  addQuestion,
   toggleQuestion,
   onClose,
 }: {
@@ -48,10 +49,22 @@ export function NextVisitScreen({
   appointmentTime?: string;
   hospitalName?: string;
   doctorName?: string;
-  openModal: (kind: Exclude<ModalKind, null>) => void;
+  addQuestion: PsycheDataActions["addQuestion"];
   toggleQuestion: PsycheDataActions["toggleQuestion"];
   onClose: () => void;
 }) {
+  const [inputVisible, setInputVisible] = useState(false);
+  const [inputText, setInputText] = useState("");
+  const inputRef = useRef<TextInput>(null);
+
+  const handleAddQuestion = () => {
+    if (inputText.trim()) {
+      addQuestion(inputText.trim());
+    }
+    setInputText("");
+    setInputVisible(false);
+  };
+
   const summary = generateVisitPrepSummary(data);
   const dday = appointmentDate ? Math.max(daysUntil(appointmentDate), 0) : null;
 
@@ -145,12 +158,47 @@ export function NextVisitScreen({
           {/* 의사에게 물어볼 질문 */}
           <View style={styles.sectionRow}>
             <Text style={styles.sectionTitle}>의사에게 물어볼 질문</Text>
-            <Pressable style={styles.addBtn} onPress={() => openModal("question")}>
-              <Text style={styles.addBtnText}>+ 질문 추가</Text>
-            </Pressable>
+            {!inputVisible && (
+              <Pressable
+                style={styles.addBtn}
+                onPress={() => {
+                  setInputVisible(true);
+                  setTimeout(() => inputRef.current?.focus(), 50);
+                }}
+              >
+                <Text style={styles.addBtnText}>+ 질문 추가</Text>
+              </Pressable>
+            )}
           </View>
+
+          {/* 인라인 입력 */}
+          {inputVisible && (
+            <View style={styles.questionInputRow}>
+              <TextInput
+                ref={inputRef}
+                style={styles.questionInput}
+                placeholder="궁금한 점을 입력하세요"
+                placeholderTextColor="#B0AECC"
+                value={inputText}
+                onChangeText={setInputText}
+                onSubmitEditing={handleAddQuestion}
+                returnKeyType="done"
+                autoFocus
+              />
+              <Pressable style={styles.inputSaveBtn} onPress={handleAddQuestion}>
+                <Text style={styles.inputSaveBtnText}>추가</Text>
+              </Pressable>
+              <Pressable
+                style={styles.inputCancelBtn}
+                onPress={() => { setInputText(""); setInputVisible(false); }}
+              >
+                <Text style={styles.inputCancelBtnText}>✕</Text>
+              </Pressable>
+            </View>
+          )}
+
           <View style={styles.listStack}>
-            {data.questions.length === 0 ? (
+            {data.questions.length === 0 && !inputVisible ? (
               <View style={styles.emptyPanel}>
                 <Text style={styles.emptyText}>아직 등록된 질문이 없어요</Text>
               </View>
@@ -356,6 +404,49 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
     fontWeight: "600",
+  },
+
+  // 인라인 질문 입력
+  questionInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
+    ...shadow,
+  },
+  questionInput: {
+    flex: 1,
+    fontSize: 14,
+    color: "#20212B",
+    paddingVertical: 4,
+    outlineStyle: "none",
+  } as any,
+  inputSaveBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: "#4025E8",
+  },
+  inputSaveBtnText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  inputCancelBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: "#F0EFF8",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  inputCancelBtnText: {
+    color: "#9096A2",
+    fontSize: 12,
+    fontWeight: "700",
   },
 
   // 질문

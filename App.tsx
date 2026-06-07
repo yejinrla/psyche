@@ -129,7 +129,7 @@ export default function App() {
         appointmentTime={nextAppointmentVisit?.appointment.time}
         hospitalName={nextAppointmentVisit?.hospitalName}
         doctorName={nextAppointmentVisit?.doctorName}
-        openModal={openModal}
+        addQuestion={actions.addQuestion}
         toggleQuestion={actions.toggleQuestion}
         onClose={() => setNextVisitVisible(false)}
       />
