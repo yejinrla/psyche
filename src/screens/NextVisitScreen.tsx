@@ -71,7 +71,7 @@ export function NextVisitScreen({
   return (
     <Modal
       visible={visible}
-      animationType="none"
+      animationType="slide"
       transparent
       onRequestClose={onClose}
     >
@@ -247,15 +247,16 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: "rgba(16,24,32,0.45)",
-    alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "flex-end",
   },
   container: {
-    width: "90%",
-    maxWidth: 360,
-    maxHeight: "85%",
+    width: "100%",
+    maxWidth: 390,
+    alignSelf: "center",
+    maxHeight: "92%",
     backgroundColor: "#F7F6FB",
-    borderRadius: 24,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     overflow: "hidden",
   },
   topBar: {
