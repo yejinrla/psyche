@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>Psyche</title>
+
+    <!-- Pretendard CDN -->
+    <link
+      rel="stylesheet"
+      as="style"
+      crossorigin
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/pretendard-dynamic-subset.css"
+    />
+
+    <style id="expo-reset">
+      /* react-native-web 권장 리셋 */
+      html, body { height: 100%; }
+      body { overflow: hidden; }
+      #root { display: flex; height: 100%; flex: 1; }
+
+      /*
+       * React Native Web의 기본 fontFamily는 "System".
+       * @font-face로 "System"을 Pretendard로 교체하면
+       * 모든 Text 컴포넌트에 자동 적용됩니다.
+       */
+      @font-face {
+        font-family: "System";
+        font-weight: 100;
+        src: local("Pretendard-Thin"),
+             url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/woff2-subset/Pretendard-Thin.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "System";
+        font-weight: 200;
+        src: local("Pretendard-ExtraLight"),
+             url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/woff2-subset/Pretendard-ExtraLight.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "System";
+        font-weight: 300;
+        src: local("Pretendard-Light"),
+             url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/woff2-subset/Pretendard-Light.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "System";
+        font-weight: 400;
+        src: local("Pretendard-Regular"),
+             url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/woff2-subset/Pretendard-Regular.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "System";
+        font-weight: 500;
+        src: local("Pretendard-Medium"),
+             url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/woff2-subset/Pretendard-Medium.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "System";
+        font-weight: 600;
+        src: local("Pretendard-SemiBold"),
+             url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/woff2-subset/Pretendard-SemiBold.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "System";
+        font-weight: 700;
+        src: local("Pretendard-Bold"),
+             url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/woff2-subset/Pretendard-Bold.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "System";
+        font-weight: 800;
+        src: local("Pretendard-ExtraBold"),
+             url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/woff2-subset/Pretendard-ExtraBold.woff2") format("woff2");
+      }
+      @font-face {
+        font-family: "System";
+        font-weight: 900;
+        src: local("Pretendard-Black"),
+             url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/web/static/woff2-subset/Pretendard-Black.woff2") format("woff2");
+      }
+
+      /* body 폰트도 Pretendard로 */
+      body {
+        font-family: "Pretendard", -apple-system, BlinkMacSystemFont,
+          "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      }
+    </style>
+  </head>
+
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+  </body>
+</html>
