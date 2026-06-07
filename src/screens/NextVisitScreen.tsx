@@ -17,7 +17,6 @@ import {
 } from "lucide-react-native";
 import { generateVisitPrepSummary } from "../utils/analytics";
 import { daysUntil } from "../utils/date";
-import { SectionHeader } from "../components/SharedComponents";
 import type { ModalKind, PsycheData } from "../types";
 import type { PsycheDataActions } from "../hooks/usePsycheData";
 
@@ -125,7 +124,9 @@ export function NextVisitScreen({
           </View>
 
           {/* 진료 준비 메모 */}
-          <Text style={styles.sectionTitle}>진료 준비 메모</Text>
+          <View style={styles.sectionRow}>
+            <Text style={styles.sectionTitle}>진료 준비 메모</Text>
+          </View>
           <View style={styles.panel}>
             {summary.map((item, index) => (
               <View
@@ -142,11 +143,12 @@ export function NextVisitScreen({
           </View>
 
           {/* 의사에게 물어볼 질문 */}
-          <SectionHeader
-            title="의사에게 물어볼 질문"
-            actionLabel="질문 추가"
-            onAction={() => openModal("question")}
-          />
+          <View style={styles.sectionRow}>
+            <Text style={styles.sectionTitle}>의사에게 물어볼 질문</Text>
+            <Pressable style={styles.addBtn} onPress={() => openModal("question")}>
+              <Text style={styles.addBtnText}>+ 질문 추가</Text>
+            </Pressable>
+          </View>
           <View style={styles.listStack}>
             {data.questions.length === 0 ? (
               <View style={styles.emptyPanel}>
@@ -309,10 +311,26 @@ const styles = StyleSheet.create({
   },
 
   // 섹션
+  sectionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   sectionTitle: {
     color: "#20212B",
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "800",
+  },
+  addBtn: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    backgroundColor: "#EBE8FD",
+  },
+  addBtnText: {
+    color: "#4025E8",
+    fontSize: 12,
+    fontWeight: "700",
   },
   panel: {
     borderRadius: 18,
