@@ -171,32 +171,6 @@ export function NextVisitScreen({
             )}
           </View>
 
-          {/* 인라인 입력 */}
-          {inputVisible && (
-            <View style={styles.questionInputRow}>
-              <TextInput
-                ref={inputRef}
-                style={styles.questionInput}
-                placeholder="궁금한 점을 입력하세요"
-                placeholderTextColor="#B0AECC"
-                value={inputText}
-                onChangeText={setInputText}
-                onSubmitEditing={handleAddQuestion}
-                returnKeyType="done"
-                autoFocus
-              />
-              <Pressable style={styles.inputSaveBtn} onPress={handleAddQuestion}>
-                <Text style={styles.inputSaveBtnText}>추가</Text>
-              </Pressable>
-              <Pressable
-                style={styles.inputCancelBtn}
-                onPress={() => { setInputText(""); setInputVisible(false); }}
-              >
-                <Text style={styles.inputCancelBtnText}>✕</Text>
-              </Pressable>
-            </View>
-          )}
-
           <View style={styles.listStack}>
             {data.questions.length === 0 && !inputVisible ? (
               <View style={styles.emptyPanel}>
@@ -234,6 +208,32 @@ export function NextVisitScreen({
                   </View>
                 </Pressable>
               ))
+            )}
+
+            {/* 인라인 입력 — 목록 맨 아래 */}
+            {inputVisible && (
+              <View style={styles.questionInputRow}>
+                <TextInput
+                  ref={inputRef}
+                  style={styles.questionInput}
+                  placeholder="궁금한 점을 입력하세요"
+                  placeholderTextColor="#B0AECC"
+                  value={inputText}
+                  onChangeText={setInputText}
+                  onSubmitEditing={handleAddQuestion}
+                  returnKeyType="done"
+                  autoFocus
+                />
+                <Pressable style={styles.inputSaveBtn} onPress={handleAddQuestion}>
+                  <Text style={styles.inputSaveBtnText}>추가</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.inputCancelBtn}
+                  onPress={() => { setInputText(""); setInputVisible(false); }}
+                >
+                  <Text style={styles.inputCancelBtnText}>✕</Text>
+                </Pressable>
+              </View>
             )}
           </View>
         </ScrollView>
